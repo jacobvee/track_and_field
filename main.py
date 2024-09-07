@@ -16,12 +16,26 @@ def main():
     # Scrape and clean data
     print("Running event scraper...")
     combined_df = run_all_events()
+    
     print("Processing combined data...")
     combined_data_cleaned = process_combined_data(combined_data=combined_df)
-    
-    # Convert the cleaned dataframe to a list of lists
-    data_to_update = combined_data_cleaned.values.tolist()
 
+    # Iterate over 'men' and 'women' keys in combined_data_cleaned dictionary
+    for gender, df in combined_data_cleaned.items():
+        print(f"Processing data for {gender}...")
+        
+        # Ensure df is a DataFrame and not empty
+        if isinstance(df, pd.DataFrame) and not df.empty:
+            # Convert the cleaned dataframe to a list of lists
+            data_to_update = df.values.tolist()
+
+            # Prepare Google Sheets update
+            print(f"Updating Google Sheets for {gender}...")
+            update_google_sheets(data_to_update)
+        else:
+            print(f"No data available for {gender}.")
+
+def update_google_sheets(data_to_update):
     # Retrieve Google credentials from the environment variable
     credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
@@ -44,12 +58,13 @@ def main():
     }
 
     # Update the Google Sheets file
-    print("Updating Google Sheets...")
-    result = service.spreadsheets().values().update(
-        spreadsheetId=SPREADSHEET_ID, range=RANGE_NAME,
-        valueInputOption='RAW', body=body).execute()
-
-    print(f'{result.get("updatedCells")} cells updated.')
+    try:
+        result = service.spreadsheets().values().update(
+            spreadsheetId=SPREADSHEET_ID, range=RANGE_NAME,
+            valueInputOption='RAW', body=body).execute()
+        print(f'{result.get("updatedCells")} cells updated.')
+    except Exception as e:
+        print(f"Failed to update Google Sheets: {e}")
 
 if __name__ == '__main__':
     main()

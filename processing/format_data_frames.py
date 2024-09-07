@@ -1,3 +1,5 @@
+import pandas as pd
+
 def process_combined_data(combined_data):
     for gender in ['men', 'women']:
         for event, df in combined_data[gender].items():
