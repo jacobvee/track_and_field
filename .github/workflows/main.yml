@@ -28,9 +28,9 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Create Google credentials file
+      - name: Create Google credentials file from base64
         run: |
-          echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" | sed 's/\\n/\n/g' > ${{ github.workspace }}/credentials.json
+          echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" | base64 -d > ${{ github.workspace }}/credentials.json
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/credentials.json
 
