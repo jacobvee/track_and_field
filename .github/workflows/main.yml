@@ -10,14 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Clear existing actions cache
-        run: |
-          sudo rm -rf ${{ runner.tool_cache }}/*  # Force clearing of tool cache
-
       - name: Set up Node.js 16
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '16'
 
       - name: Checkout the repository
         uses: actions/checkout@v3
@@ -29,19 +25,16 @@ jobs:
           
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install -r requirements.txt
-
 
       - name: Create Google credentials file
         run: |
-          echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" > ${{ github.workspace }}/google-credentials.json
+          echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" > ${{ github.workspace }}/credentials.json
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/google-credentials.json
-
-
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/credentials.json
 
       - name: Run Python script
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: $PWD/credentials.json
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/credentials.json
         run: python main.py
