@@ -28,11 +28,9 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Create Google credentials file using heredoc
+      - name: Create Google credentials file
         run: |
-          cat <<EOF > ${{ github.workspace }}/credentials.json
-${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-EOF
+          echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" | sed 's/\\n/\n/g' > ${{ github.workspace }}/credentials.json
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/credentials.json
 
