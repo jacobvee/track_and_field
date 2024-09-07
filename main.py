@@ -12,32 +12,32 @@ from processing.format_data_frames import process_combined_data
 SPREADSHEET_ID = '1MPHHM-L2jcldWxFc2a8-_5bAe9ZhAdmwwr4MKcQcut8'  # Your Google Sheets file ID
 RANGE_NAME = 'Sheet1!A1'  # Sheet and starting cell to update
 
+def process_and_update(df, gender, event):
+    print(f"Processing data for {gender} - {event}...")
+
+    # Handle NaT values
+    df = df.fillna("N/A")  # Replace NaT with "N/A" or any placeholder
+    data_to_update = df.values.tolist()
+
+    # Update Google Sheets
+    print(f"Updating Google Sheets for {gender} - {event}...")
+    update_google_sheets(data_to_update)
+
 def main():
     # Scrape and clean data
     print("Running event scraper...")
     combined_df = run_all_events()
-    print("Combined data fetched from scraper:", combined_df)  # Debug print
+    print("Combined data fetched from scraper:", combined_df)
     
     print("Processing combined data...")
     combined_data_cleaned = process_combined_data(combined_data=combined_df)
-    print("Processed combined data:", combined_data_cleaned)  # Debug print
+    print("Processed combined data:", combined_data_cleaned)
 
     # Iterate over 'men' and 'women' keys in combined_data_cleaned dictionary
     for gender, event_data in combined_data_cleaned.items():
-        print(f"Processing data for {gender}...")
-
-        # event_data is a dictionary where the keys are events and the values are DataFrames
         for event, df in event_data.items():
-            print(f"Processing data for {event} event...")
-
-            # Ensure df is a DataFrame and not empty
             if isinstance(df, pd.DataFrame) and not df.empty:
-                # Convert the cleaned dataframe to a list of lists
-                data_to_update = df.values.tolist()
-
-                # Prepare Google Sheets update
-                print(f"Updating Google Sheets for {gender} - {event}...")
-                update_google_sheets(data_to_update)
+                process_and_update(df, gender, event)
             else:
                 print(f"No data available for {gender} - {event}.")
 
