@@ -10,7 +10,45 @@ from processing.format_data_frames import process_combined_data
 
 # Google Sheets settings
 SPREADSHEET_ID = '1MPHHM-L2jcldWxFc2a8-_5bAe9ZhAdmwwr4MKcQcut8'  # Your Google Sheets file ID
-RANGE_NAME = 'Sheet1!A1'  # Sheet and starting cell to update
+RANGE_NAME = 'Sheet1!A2'  # Sheet and starting cell to update
+
+def update_google_sheets_in_batches(data_to_update, batch_size=10000):
+    total_rows = len(data_to_update)
+    credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+
+    if credentials_path:
+        print(f"Google credentials found at: {credentials_path}")
+        try:
+            credentials = service_account.Credentials.from_service_account_file(credentials_path)
+            print("Successfully loaded credentials.")
+        except Exception as e:
+            print(f"Error loading credentials: {e}")
+            raise
+    else:
+        raise EnvironmentError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
+
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+    credentials = credentials.with_scopes(SCOPES)
+
+    try:
+        service = build('sheets', 'v4', credentials=credentials)
+
+        for start in range(0, total_rows, batch_size):
+            end = min(start + batch_size, total_rows)
+            batch_data = data_to_update[start:end]
+            print(f"Updating rows {start} to {end}...")
+
+            body = {'values': batch_data}
+            result = service.spreadsheets().values().update(
+                spreadsheetId=SPREADSHEET_ID,
+                range=f'{RANGE_NAME}{start + 1}',  # Adjust range dynamically based on batch
+                valueInputOption='RAW',
+                body=body
+            ).execute()
+
+            print(f"Batch updated {result.get('updatedCells')} cells.")
+    except Exception as e:
+        print(f"Failed to update Google Sheets: {e}")
 
 def process_and_update(df, gender, event):
     print(f"Processing data for {gender} - {event}...")
@@ -19,9 +57,9 @@ def process_and_update(df, gender, event):
     df = df.fillna("N/A")  # Replace NaT with "N/A" or any placeholder
     data_to_update = df.values.tolist()
 
-    # Update Google Sheets
-    print(f"Updating Google Sheets for {gender} - {event}...")
-    update_google_sheets(data_to_update)
+    # Update Google Sheets in batches
+    print(f"Updating Google Sheets for {gender} - {event} in batches...")
+    update_google_sheets_in_batches(data_to_update)
 
 def main():
     # Scrape and clean data
@@ -41,13 +79,18 @@ def main():
             else:
                 print(f"No data available for {gender} - {event}.")
 
+if __name__ == '__main__':
+    main()
+
+
 def update_google_sheets(data_to_update):
-    # Retrieve Google credentials from the environment variable
+    # Check the size of the data to update
+    print(f"Updating Google Sheets with {len(data_to_update)} rows.")
+
     credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
     if credentials_path:
         print(f"Google credentials found at: {credentials_path}")
-        # Load credentials from the credentials file
         try:
             credentials = service_account.Credentials.from_service_account_file(credentials_path)
             print("Successfully loaded credentials.")
@@ -57,6 +100,24 @@ def update_google_sheets(data_to_update):
     else:
         raise EnvironmentError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
 
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+    credentials = credentials.with_scopes(SCOPES)
+
+    try:
+        service = build('sheets', 'v4', credentials=credentials)
+        body = {'values': data_to_update}
+
+        # Send update request
+        result = service.spreadsheets().values().update(
+            spreadsheetId=SPREADSHEET_ID,
+            range=RANGE_NAME,
+            valueInputOption='RAW',
+            body=body
+        ).execute()
+
+        print(f'{result.get("updatedCells")} cells updated.')
+    except Exception as e:
+        print(f"Failed to update Google Sheets: {e}")
 
     # Define the Google Sheets API scope
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
