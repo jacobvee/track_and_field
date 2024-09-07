@@ -30,6 +30,7 @@ class AthleticsDataScraper:
         }
         special_cases_female = {
             '100m' : ('w_100ok.htm', 'w_100no.htm'),
+            '200m' : ('w_200ok.htm', 'w_200no.htm'),
             'trip' : ('wtripleok.htm', 'wtripleno.htm'),
             'long' : ('wlongok.htm', 'wlongno.htm'),
             '100h' : ('w_100hok.htm', 'w_100hno.htm'),
