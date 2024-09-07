@@ -34,10 +34,9 @@ jobs:
 
 
       - name: Create credentials file
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
         run: |
-          echo "$GOOGLE_APPLICATION_CREDENTIALS" > credentials.json
+          echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" > credentials.json
+
 
       - name: Run Python script
         env:
