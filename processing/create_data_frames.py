@@ -1,5 +1,5 @@
 
-from scraper import AthleticsDataScraper
+from processing.scraper import AthleticsDataScraper
 
 def run_all_events():
     events = [
