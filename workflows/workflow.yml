@@ -1,6 +1,5 @@
 name: Data Scraping and Upload
 
-# Schedule the workflow to run once a day at midnight UTC
 on:
   schedule:
     - cron: '0 0 * * *'  # Runs daily at midnight UTC
