@@ -3,3 +3,4 @@ pandas==2.2.2 # You can adjust the version of pandas as well
 requests==2.26.0
 google-auth==2.34.0
 google-api-python-client==2.144.0
+beautifulsoup4==4.12.3
