@@ -22,17 +22,23 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-          
+
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Create Google credentials file
+      - name: Create Google credentials file using heredoc
         run: |
-          printf "%s" "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" > ${{ github.workspace }}/credentials.json
+          cat <<EOF > ${{ github.workspace }}/credentials.json
+${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+EOF
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/credentials.json
+
+      - name: Debug credentials file
+        run: |
+          cat ${{ github.workspace }}/credentials.json
 
       - name: Run Python script
         env:
