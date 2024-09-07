@@ -23,23 +23,26 @@ def main():
     print("Processed combined data:", combined_data_cleaned)  # Debug print
 
     # Iterate over 'men' and 'women' keys in combined_data_cleaned dictionary
-    for gender, df in combined_data_cleaned.items():
+    for gender, event_data in combined_data_cleaned.items():
         print(f"Processing data for {gender}...")
-        
-        # Ensure df is a DataFrame and not empty
-        if isinstance(df, pd.DataFrame) and not df.empty:
-            # Convert the cleaned dataframe to a list of lists
-            data_to_update = df.values.tolist()
 
-            # Prepare Google Sheets update
-            print(f"Updating Google Sheets for {gender}...")
-            update_google_sheets(data_to_update)
-        else:
-            print(f"No data available for {gender}.")
+        # event_data is a dictionary where the keys are events and the values are DataFrames
+        for event, df in event_data.items():
+            print(f"Processing data for {event} event...")
+
+            # Ensure df is a DataFrame and not empty
+            if isinstance(df, pd.DataFrame) and not df.empty:
+                # Convert the cleaned dataframe to a list of lists
+                data_to_update = df.values.tolist()
+
+                # Prepare Google Sheets update
+                print(f"Updating Google Sheets for {gender} - {event}...")
+                update_google_sheets(data_to_update)
+            else:
+                print(f"No data available for {gender} - {event}.")
 
 def update_google_sheets(data_to_update):
     # Retrieve Google credentials from the environment variable
-    print("Attempting to retrieve Google Application credentials...")
     credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
     if credentials_path:
@@ -83,7 +86,6 @@ def update_google_sheets(data_to_update):
         print(f'{result.get("updatedCells")} cells updated.')
     except Exception as e:
         print(f"Failed to update Google Sheets: {e}")
-
 
 if __name__ == '__main__':
     main()
