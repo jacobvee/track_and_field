@@ -30,7 +30,7 @@ jobs:
 
       - name: Create Google credentials file
         run: |
-          echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" > ${{ github.workspace }}/credentials.json
+          printf "%s" "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" > ${{ github.workspace }}/credentials.json
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/credentials.json
 
