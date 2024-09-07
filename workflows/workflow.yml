@@ -1,18 +1,17 @@
-name: Scrape and Upload Data
+name: Data Scraping and Upload
 
+# Schedule the workflow to run once a day at midnight UTC
 on:
   schedule:
-    - cron: '1 * * * *'  
-  push:
-    branches:
-      - main
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+  workflow_dispatch:  # Allow manual triggering of the workflow as well
 
 jobs:
-  scrape-and-upload:
+  upload-to-drive:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout the repository
         uses: actions/checkout@v2
 
       - name: Set up Python
@@ -22,10 +21,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib pandas
+          pip install -r requirements.txt
 
-      - name: Run script
+      - name: Create credentials file
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+        run: |
+          echo "$GOOGLE_APPLICATION_CREDENTIALS" > credentials.json
+
+      - name: Run Python script
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: $PWD/credentials.json
         run: python main.py
