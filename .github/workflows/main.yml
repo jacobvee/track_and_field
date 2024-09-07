@@ -16,10 +16,10 @@ jobs:
           node-version: '16'  # Force Node.js version 16
 
       - name: Checkout the repository
-        uses: actions/checkout@v3  # Still using v2, but will now run under Node.js 16
+        uses: actions/checkout@v3  # Use v3 instead of v2
 
       - name: Set up Python
-        uses: actions/setup-python@v3  # Still using v2, but will now run under Node.js 16
+        uses: actions/setup-python@v4  # Use v4 instead of v2
         with:
           python-version: '3.x'
           
