@@ -57,6 +57,7 @@ def update_google_sheets(data_to_update):
     else:
         raise EnvironmentError("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set.")
 
+
     # Define the Google Sheets API scope
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
     print(f"Setting API scopes to: {SCOPES}")
