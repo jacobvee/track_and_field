@@ -177,18 +177,23 @@ class AthleticsDataScraper:
         else:
             df_combined = df_legal
     
+        # Debug: Print the raw DOB values before processing
+        print("Raw DOB values before processing:", df_combined['DOB'].head())
+    
         # Handle invalid dates by replacing '00' with '01'
-        df_combined['Date'] = df_combined['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
         df_combined['DOB'] = df_combined['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)
+        df_combined['Date'] = df_combined['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
     
-        # Convert the Date and DOB columns to datetime
-        df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
+        # Convert the Date and DOB columns to datetime, debug the process
+        print("Converting DOB to datetime...")
         df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%Y', errors='coerce')
+        print("Converted DOB values:", df_combined['DOB'].head())
     
-        # Fill mode DOB for missing or incorrect dates
+        df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
+    
         df_combined = self.fill_mode_dob(df_combined)
     
-        # Process the time and note columns
+        # Continue with other processing
         df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
         df_combined['Time'] = df_combined['Time'].str.replace(r'[a-zA-Z#*@+´]', '', regex=True)
         if event in ['800', '1500', '5000', '10000']:
@@ -198,10 +203,11 @@ class AthleticsDataScraper:
         df_combined['Sex'] = 'Male' if self.gender == 'male' else 'Female'
         df_combined['Event'] = event
     
-        # Add rankings and competition ID
         df_combined = self.add_all_conditions_rank(df_combined, event)
         df_combined = self.add_age_at_time_of_race(df_combined)
         df_combined = self.add_competition_id(df_combined)
     
         return df_combined
-
+    
+    
+    
