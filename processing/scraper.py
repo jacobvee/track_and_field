@@ -143,31 +143,42 @@ class AthleticsDataScraper:
 
     def get_combined_data(self, event):
         df_legal, has_wind = self.fetch_data(event, True)
-
+    
         if has_wind:
             df_illegal, _ = self.fetch_data(event, False)
             df_combined = pd.concat([df_legal, df_illegal], ignore_index=True)
         else:
             df_combined = df_legal
-            df_legal['Wind'].fillna(0,inplace=True)
-        
-
-        df_combined.drop(columns = 'DOB',axis=1)
+    
+        # Handle invalid dates by replacing '00' with '01'
+        df_combined['Date'] = df_combined['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
+        df_combined['DOB'] = df_combined['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)
+    
+        # Convert the Date and DOB columns to datetime
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
-
+        df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%Y', errors='coerce')
+    
+        # Handle missing wind data
+        if 'Wind' in df_combined.columns:
+            df_combined['Wind'].fillna(0, inplace=True)
+        else:
+            # Add 'Wind' column with 0 if it's missing
+            df_combined['Wind'] = 0
+    
         # Process the time and note columns
         df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
         df_combined['Time'] = df_combined['Time'].str.replace(r'[a-zA-Z#*@+´]', '', regex=True)
+        
         if event in ['800', '1500', '5000', '10000']:
             df_combined['Time'] = df_combined['Time'].apply(self.convert_mmss_to_seconds)
-
+    
         df_combined['Time'] = df_combined['Time'].astype('float')
         df_combined['Sex'] = 'Male' if self.gender == 'male' else 'Female'
         df_combined['Event'] = event
-
+    
         # Add rankings and competition ID
         df_combined = self.add_all_conditions_rank(df_combined, event)
         df_combined = self.add_competition_id(df_combined)
-        
-
+    
         return df_combined
+    
