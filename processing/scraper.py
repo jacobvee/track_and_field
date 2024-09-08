@@ -58,7 +58,7 @@ class AthleticsDataScraper:
             'disc' : ('wdiscok.htm','wdiscno.htm'),
             'jave' : ('wjaveok.htm','wjaveno.htm'),
             'hamm' : ('whammok.htm','whammno.htm'),
-            'hept' : ('whepaok.htm','wheptno.htm'),
+            'hept' : ('whepaok.htm','whepano.htm'),
             '60m'  :   ('w60mok.htm','w60mno.htm'),
             '800m' :   ('w_800ok.htm','w_800no.htm'),
             '1500m': ('w_1500ok.htm','w_1500no.htm'),
