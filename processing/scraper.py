@@ -70,7 +70,7 @@ class AthleticsDataScraper:
         url = self.generate_url(event, is_legal)
         response = requests.get(url)
         response.raise_for_status()
-        
+
         soup = BeautifulSoup(response.content, 'html.parser')
         pre_tag = soup.find('pre')
         table_text = pre_tag.get_text()
@@ -81,30 +81,31 @@ class AthleticsDataScraper:
             return [part.strip() for part in parts]
 
         data = []
-        max_length = 0
         for row in rows:
             if row.strip():
                 processed_row = process_row(row)
                 data.append(processed_row)
-                max_length = max(max_length, len(processed_row))
 
-        if max_length == 10:
-            column_names = ["Test", "Rank", "Time", "Wind", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
-        else:
-            column_names = ["Test", "Rank", "Time", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
+        # Use a fixed set of column names for consistency across all events
+        column_names = ["Rank", "Time", "Wind", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
 
-        df = pd.DataFrame(data, columns=column_names[:max_length])
+        # Create DataFrame with a fixed set of columns
+        df = pd.DataFrame(data, columns=column_names[:len(max(data, key=len))])  # Adjust based on the row with max columns
         df.drop('Test', inplace=True, axis=1, errors='ignore')
         df['Legal'] = 'Y' if is_legal else 'N'
-        has_wind = 'Wind' in df.columns
-        return df, has_wind
+
+        return df, 'Wind' in df.columns  # Return whether 'Wind' column is present
+
     
     def add_all_conditions_rank(self, df, event):
         if re.search(r'\d', event):
+            # Rank based on time (ascending for track events)
             df['All Conditions Rank'] = df['Time'].rank(method='min')
         else:
+            # Rank based on time (descending for field events)
             df['All Conditions Rank'] = df['Time'].rank(ascending=False, method='min')
         return df
+
     
     def add_age_at_time_of_race(self, df):
         df['DOB'] = pd.to_datetime(df['DOB'], format='%d.%m.%Y', errors='coerce')
@@ -121,6 +122,24 @@ class AthleticsDataScraper:
         )
 
         return df
+
+    def ensure_column_order(df):
+        expected_columns = [
+            'Rank', 'Time', 'Wind', 'Name', 'Country', 'DOB', 'Position_in_race', 
+            'City', 'Date', 'Legal', 'Note', 'Sex', 'Event', 'All Conditions Rank', 
+            'Age at Time of Race', 'competition_id', 'Track/Field'
+        ]
+
+        # Add missing columns with NaN values
+        for col in expected_columns:
+            if col not in df.columns:
+                df[col] = pd.NA
+
+        # Reorder columns
+        df = df[expected_columns]
+
+        return df
+
 
     def add_competition_id(self, df):
         df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
@@ -144,41 +163,36 @@ class AthleticsDataScraper:
 
     def get_combined_data(self, event):
         df_legal, has_wind = self.fetch_data(event, True)
-    
         if has_wind:
             df_illegal, _ = self.fetch_data(event, False)
             df_combined = pd.concat([df_legal, df_illegal], ignore_index=True)
         else:
             df_combined = df_legal
-    
-        # Handle invalid dates
+    §
+        # Process and clean the combined data
         df_combined.dropna(inplace=True)
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
         df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%Y', errors='coerce')
-        
+
+        # Fill missing DOB values using mode
         df_combined = self.fill_mode_dob(df_combined)
-    
-        # Clean up time data
+
+        # Clean up time data and process further
         df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
         df_combined['Time'] = df_combined['Time'].str.replace(r'[a-zA-Z#*@+´]', '', regex=True)
-    
         if event in ['800', '1500', '5000', '10000']:
             df_combined['Time'] = df_combined['Time'].apply(self.convert_mmss_to_seconds)
-    
         df_combined['Time'] = df_combined['Time'].astype('float')
+
         df_combined['Sex'] = 'Male' if self.gender == 'male' else 'Female'
         df_combined['Event'] = event
-    
-        # Rank and handle conditions
+
+        # Add conditions rank, age, and competition ID
         df_combined = self.add_all_conditions_rank(df_combined, event)
-    
-        df_combined.loc[df_combined['Legal'] == 'N', 'Rank'] = pd.NA
         df_combined = self.add_age_at_time_of_race(df_combined)
-    
-        # Add competition ID
         df_combined = self.add_competition_id(df_combined)
-    
+
+        # Ensure consistent column order
+        df_combined = ensure_column_order(df_combined)
+
         return df_combined
-    
-    
-    

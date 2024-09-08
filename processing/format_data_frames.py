@@ -9,5 +9,9 @@ def process_combined_data(combined_data):
 
             # Add 'Track/Field' column based on the event type
             df['Track/Field'] = df['Event'].apply(lambda x: 'Track' if any(char.isdigit() for char in x) else 'Field')
-    
+
+            # Ensure consistent column order
+            df = ensure_column_order(df)
+
     return combined_data
+
