@@ -1,4 +1,5 @@
 import pandas as pd
+from preprocessing.scraper import ensure_column_order
 
 def process_combined_data(combined_data):
     for gender in ['men', 'women']:
