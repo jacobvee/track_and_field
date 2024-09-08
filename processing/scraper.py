@@ -181,14 +181,15 @@ class AthleticsDataScraper:
         df_combined['DOB'] = df_combined['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)
         df_combined['Date'] = df_combined['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
     
-        # Convert the Date and DOB columns to datetime, handling two-digit year format
-        print("Converting DOB to datetime...")
+        # Convert the Date and DOB columns to datetime
         df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%y', errors='coerce')
-        print("Converted DOB values:", df_combined['DOB'].head())
-    
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
     
         df_combined = self.fill_mode_dob(df_combined)
+    
+        # Convert Timestamp to string format before updating Google Sheets
+        df_combined['DOB'] = df_combined['DOB'].dt.strftime('%Y-%m-%d')
+        df_combined['Date'] = df_combined['Date'].dt.strftime('%Y-%m-%d')
     
         # Process the time and note columns
         df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
