@@ -51,7 +51,7 @@ def update_google_sheets_in_batches(data_to_update, batch_size=10000, column_hea
         print(f"Google credentials found at: {credentials_path}")
         try:
             credentials = service_account.Credentials.from_service_account_file(credentials_path)
-            print("Successfully loaded credentials.")
+            print("Successfully loaded credentials...")
         except Exception as e:
             print(f"Error loading credentials: {e}")
             raise
