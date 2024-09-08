@@ -70,47 +70,49 @@ class AthleticsDataScraper:
         url = self.generate_url(event, is_legal)
         response = requests.get(url)
         response.raise_for_status()
-        
+
         soup = BeautifulSoup(response.content, 'html.parser')
         pre_tag = soup.find('pre')
         table_text = pre_tag.get_text()
         rows = table_text.split('\n')
-    
+
         def process_row(row):
             parts = re.split(r'\s{2,}', row)
             return [part.strip() for part in parts]
-    
+
         data = []
         max_length = 0
+
+        # Process each row and determine the maximum number of columns
         for row in rows:
             if row.strip():
                 processed_row = process_row(row)
                 data.append(processed_row)
-                # Update max_length based on the row with the most columns
-                max_length = max(max_length, len(processed_row))
-    
-        # Use a fixed set of column names for consistency across all events
-        # Adjust column names based on max_length
-        column_names = ["Rank", "Time", "Wind", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
-        
-        # Ensure all rows have the same length by padding with NaN if necessary
-        for i, row in enumerate(data):
-            if len(row) < max_length:
-                row.extend([pd.NA] * (max_length - len(row)))  # Add NaN for missing columns
-            elif len(row) > max_length:
-                # Truncate rows if they have more columns than expected
-                data[i] = row[:max_length]
-    
-        # Ensure the number of column names matches the length of the data
-        column_names = column_names[:max_length]
-        
-        # Create DataFrame with a fixed set of columns
-        df = pd.DataFrame(data, columns=column_names)
-        df.drop('Test', inplace=True, axis=1, errors='ignore')
-        df['Legal'] = 'Y' if is_legal else 'N'
-        
-        return df, 'Wind' in df.columns  # Return whether 'Wind' column is present
+                max_length = max(max_length, len(processed_row))  # Track the row with the most columns
 
+        # Define a fixed set of column names
+        column_names = ["Rank", "Time", "Wind", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
+
+        # Adjust the length of column names to match the maximum number of columns found
+        if len(column_names) < max_length:
+            # Extend the column names list to accommodate extra columns
+            column_names += [f"Extra_Column_{i}" for i in range(len(column_names), max_length)]
+        elif len(column_names) > max_length:
+            # Truncate column names if fewer columns are found in the data
+            column_names = column_names[:max_length]
+
+        # Ensure that all rows have the same number of columns by padding them with NaN
+        for row in data:
+            while len(row) < max_length:
+                row.append(pd.NA)
+
+        # Create the DataFrame
+        df = pd.DataFrame(data, columns=column_names)
+
+        df.drop('Test', inplace=True, axis=1, errors='ignore')  # Drop any unwanted 'Test' column if it exists
+        df['Legal'] = 'Y' if is_legal else 'N'
+
+        return df, 'Wind' in df.columns  # Return the DataFrame and whether the 'Wind' column exists
 
 
     
