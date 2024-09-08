@@ -5,6 +5,25 @@ import re
 import numpy as np
 import hashlib
 
+def ensure_column_order(df):
+    """Ensure the DataFrame columns are in the correct order."""
+    expected_columns = [
+        'Rank', 'Time', 'Wind', 'Name', 'Country', 'DOB', 'Position_in_race', 
+        'City', 'Date', 'Legal', 'Note', 'Sex', 'Event', 'All Conditions Rank', 
+        'Age at Time of Race', 'competition_id', 'Track/Field'
+    ]
+    
+    # Add missing columns with NaN values
+    for col in expected_columns:
+        if col not in df.columns:
+            df[col] = pd.NA
+    
+    # Reorder columns
+    df = df[expected_columns]
+    
+    return df
+
+
 class AthleticsDataScraper:
     def __init__(self, gender):
         self.base_url = 'https://www.alltime-athletics.com/'
@@ -215,7 +234,7 @@ class AthleticsDataScraper:
         df_combined = self.add_competition_id(df_combined)
 
         # Ensure consistent column order
-        df_combined = self.ensure_column_order(df_combined)
+        df_combined = ensure_column_order(df_combined)
 
         return df_combined
 
