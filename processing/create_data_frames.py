@@ -11,22 +11,17 @@ def run_all_events():
     results = {'men': {}, 'women': {}}
     
     scraper_male = AthleticsDataScraper(gender='male')
-    scraper_female = AthleticsDataScraper(gender='woman')
+    scraper_female = AthleticsDataScraper(gender='female')
     
     for event in events:
         print(f"Fetching data for men's {event} event...")
         results['men'][event] = scraper_male.get_combined_data(event)
         
         # Swap '110h' for '100h' and 'deca' for 'hept' for women
-        if event == '110h':
-            female_event = '100h'
-        elif event == 'deca':
-            female_event = 'hept'
-        else:
-            female_event = event
-            
+        female_event = '100h' if event == '110h' else 'hept' if event == 'deca' else event
         print(f"Fetching data for women's {female_event} event...")
         results['women'][female_event] = scraper_female.get_combined_data(female_event)
     
     return results
+
 
