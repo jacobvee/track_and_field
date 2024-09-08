@@ -1,5 +1,23 @@
 import pandas as pd
-from preprocessing.scraper import ensure_column_order
+
+def ensure_column_order(df):
+    """Ensure the DataFrame columns are in the correct order."""
+    expected_columns = [
+        'Rank', 'Time', 'Wind', 'Name', 'Country', 'DOB', 'Position_in_race', 
+        'City', 'Date', 'Legal', 'Note', 'Sex', 'Event', 'All Conditions Rank', 
+        'Age at Time of Race', 'competition_id', 'Track/Field'
+    ]
+    
+    # Add missing columns with NaN values
+    for col in expected_columns:
+        if col not in df.columns:
+            df[col] = pd.NA
+    
+    # Reorder columns
+    df = df[expected_columns]
+    
+    return df
+
 
 def process_combined_data(combined_data):
     for gender in ['men', 'women']:
