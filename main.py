@@ -93,20 +93,6 @@ def update_google_sheets_in_batches(data_to_update, batch_size=10000, start_row=
 def process_and_update(df, gender, event, start_row):
     print(f"Processing data for {gender} - {event}...")
 
-    # Ensure DOB and Date columns are in datetime format before using .dt.strftime
-    if 'DOB' in df.columns:
-        df['DOB'] = pd.to_datetime(df['DOB'], errors='coerce')  # Convert to datetime
-        df['DOB'] = df['DOB'].dt.strftime('%Y-%m-%d').fillna("N/A")
-    if 'Date' in df.columns:
-        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')  # Convert to datetime
-        df['Date'] = df['Date'].dt.strftime('%Y-%m-%d').fillna("N/A")
-    
-    # Debugging print to ensure DOB and Date are correct before upload
-    print(f"DOB values before sending to Google Sheets for {gender} - {event}:")
-    print(df['DOB'].head())
-    print(f"Date values before sending to Google Sheets for {gender} - {event}:")
-    print(df['Date'].head())
-
     # Convert DataFrame to list of lists for Google Sheets API
     data_to_update = df.fillna("N/A").values.tolist()
 
