@@ -127,11 +127,9 @@ def main():
     # Scrape and clean data
     print("Running event scraper...")
     combined_df = run_all_events()
-    print("Combined data fetched from scraper:", combined_df)
     
     print("Processing combined data...")
     combined_data_cleaned = process_combined_data(combined_data=combined_df)
-    print("Processed combined data:", combined_data_cleaned)
 
     # Extract column headers (assuming all DataFrames have the same columns)
     first_event_df = next(iter(next(iter(combined_data_cleaned.values())).values()))
