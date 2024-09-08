@@ -8,7 +8,7 @@ import hashlib
 def ensure_column_order(df):
     """Ensure the DataFrame columns are in the correct order."""
     expected_columns = [
-        'Rank', 'Time', 'Wind', 'Name', 'Country', 'Position_in_race', 
+        'Rank', 'Time', 'Wind', 'Name', 'Country', 'DOB', 'Position_in_race', 
         'City', 'Date', 'Legal', 'Note', 'Sex', 'Event', 'All Conditions Rank', 
         'Age at Time of Race', 'competition_id', 'Track/Field'
     ]
@@ -110,7 +110,7 @@ class AthleticsDataScraper:
         if max_length == 10:
             column_names = ["Test", "Rank", "Time", "Wind", "Name", "Country", "Position_in_race", "City", "Date"]
         else:
-            column_names = ["Test", "Rank", "Time", "Name", "Country", "Position_in_race", "City", "Date"]
+            column_names = ["Test", "Rank", "Time", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
 
         df = pd.DataFrame(data, columns=column_names[:max_length])
         df.drop('Test', inplace=True, axis=1, errors='ignore')
@@ -150,6 +150,8 @@ class AthleticsDataScraper:
         else:
             df_combined = df_legal
         
+
+        df_combined.drop(columns = 'DOB',axis =1)
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
 
         # Process the time and note columns
