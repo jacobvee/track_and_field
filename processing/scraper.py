@@ -149,12 +149,10 @@ class AthleticsDataScraper:
             df_combined = pd.concat([df_legal, df_illegal], ignore_index=True)
         else:
             df_combined = df_legal
+        
 
-        # Handle invalid dates by replacing '00' with '01'
-        df_combined['Date'] = df_combined['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
-        df_combined['DOB'] =  df_combined['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)
 
-        # Convert the Date and DOB columns to datetime
+        df_combined.dropna(subset=['Date','DOB'], inplace=True)
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
         df_combined['DOB'] =  pd.to_datetime(df_combined['DOB'], format='%d.%m.%Y', errors='coerce')
 
