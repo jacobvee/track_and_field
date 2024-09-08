@@ -151,11 +151,11 @@ class AthleticsDataScraper:
             df_combined = df_legal
         
 
-
+        print(df_combined['DOB'])
         df_combined.dropna(subset=['Date','DOB'], inplace=True)
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
         df_combined['DOB'] =  pd.to_datetime(df_combined['DOB'], format='%d.%m.%Y', errors='coerce')
-
+        print(df_combined['DOB'])
 
         # Process the time and note columns
         df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
