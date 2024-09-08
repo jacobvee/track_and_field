@@ -23,5 +23,3 @@ def run_all_events():
         results['women'][female_event] = scraper_female.get_combined_data(female_event)
     
     return results
-
-

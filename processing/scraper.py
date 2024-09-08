@@ -23,14 +23,13 @@ def ensure_column_order(df):
     
     return df
 
-
 class AthleticsDataScraper:
-    def __init__(self):
+    def __init__(self, gender):
         self.base_url = 'https://www.alltime-athletics.com/'
+        self.gender = gender  # Add gender as a class attribute
     
     def generate_url(self, event, is_legal):
-        # Handle special cases with different URL patterns
-        special_cases = {
+        special_cases_male = {
             '100m': ('m_100ok.htm', 'm100mno.htm'),
             'trip': ('mtripok.htm', 'mtripno.htm'),
             'long': ('mlongok.htm', 'mlongno.htm'),
@@ -47,13 +46,34 @@ class AthleticsDataScraper:
             '5000m':   ('m_5000ok.htm','m_5000no.htm'),
             '10000':   ('m_10kok.htm','10kno.htm')
         }
+        special_cases_female = {
+            '100m': ('w_100ok.htm', 'w_100no.htm'),
+            'trip': ('wtripleok.htm', 'wtripleno.htm'),
+            'long': ('wlongok.htm', 'wlongno.htm'),
+            '100h': ('w_100hok.htm', 'w_100hno.htm'),
+            'pole': ('wpoleok.htm','wpoleno.htm'),
+            'shot': ('wshotok.htm','wshotno.htm'),
+            'disc': ('wdiscok.htm','wdiscno.htm'),
+            'jave': ('wjaveok.htm','wjaveno.htm'),
+            'hamm': ('whammok.htm','whammno.htm'),
+            'hept': ('whepaok.htm','wheptno.htm'),
+            '60m':   ('w60mok.htm','w60mno.htm'),
+            '800m':   ('w_800ok.htm','w_800no.htm'),
+            '1500m': ('w_1500ok.htm','w_1500no.htm'),
+            '5000m':   ('w_5000ok.htm','w_5000no.htm'),
+            '10000':   ('w_10kok.htm','w_10kno.htm')
+        }
+        
+        special_cases = special_cases_male if self.gender == 'male' else special_cases_female
+        
         if event in special_cases:
             legal_suffix, illegal_suffix = special_cases[event]
             suffix = legal_suffix if is_legal else illegal_suffix
         else:
-            suffix = f"m_{event}{'ok' if is_legal else 'no'}.htm"
+            suffix = f"{self.gender[0]}_{event}{'ok' if is_legal else 'no'}.htm"
         
         return f"{self.base_url}{suffix}"
+
 
     def convert_mmss_to_seconds(self, time_str):
         parts = time_str.split(':')
