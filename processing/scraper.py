@@ -108,7 +108,7 @@ class AthleticsDataScraper:
 
         # Define column names based on the maximum row length
         if max_length == 10:
-            column_names = ["Test", "Rank", "Time", "Wind", "Name", "Country", "Position_in_race", "City", "Date"]
+            column_names = ["Test", "Rank", "Time", "Wind", "Name", "Country","DOB", "Position_in_race", "City", "Date"]
         else:
             column_names = ["Test", "Rank", "Time", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
 
@@ -151,7 +151,7 @@ class AthleticsDataScraper:
             df_combined = df_legal
         
 
-        df_combined.drop(columns = 'DOB',axis =1)
+        df_combined.drop(columns = 'DOB',axis=1)
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
 
         # Process the time and note columns
