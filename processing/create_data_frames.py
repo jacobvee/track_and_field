@@ -11,7 +11,7 @@ def run_all_events():
     results = {'men': {}, 'women': {}}
     
     scraper_male = AthleticsDataScraper(gender='male')
-    scraper_female = AthleticsDataScraper(gender='female')
+    scraper_female = AthleticsDataScraper(gender='woman')
     
     for event in events:
         print(f"Fetching data for men's {event} event...")
