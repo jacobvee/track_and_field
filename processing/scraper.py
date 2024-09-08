@@ -45,7 +45,7 @@ class AthleticsDataScraper:
             '800m':   ('m_800ok.htm','m_800no.htm'),
             '1500m': ('m_1500ok.htm','m_1500no.htm'),
             '5000m':   ('m_5000ok.htm','m_5000no.htm'),
-            '10000':   ('m_10kok.htm','10kno.htm')
+            '10000':   ('m_10kok.htm','m_10kno.htm')
         }
         special_cases_female = {
             '100m' : ('w_100ok.htm', 'w_100no.htm'),
