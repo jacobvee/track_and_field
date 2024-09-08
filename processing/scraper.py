@@ -177,23 +177,20 @@ class AthleticsDataScraper:
         else:
             df_combined = df_legal
     
-        # Debug: Print the raw DOB values before processing
-        print("Raw DOB values before processing:", df_combined['DOB'].head())
-    
         # Handle invalid dates by replacing '00' with '01'
         df_combined['DOB'] = df_combined['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)
         df_combined['Date'] = df_combined['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
     
-        # Convert the Date and DOB columns to datetime, debug the process
+        # Convert the Date and DOB columns to datetime, handling two-digit year format
         print("Converting DOB to datetime...")
-        df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%Y', errors='coerce')
+        df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%y', errors='coerce')
         print("Converted DOB values:", df_combined['DOB'].head())
     
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
     
         df_combined = self.fill_mode_dob(df_combined)
     
-        # Continue with other processing
+        # Process the time and note columns
         df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
         df_combined['Time'] = df_combined['Time'].str.replace(r'[a-zA-Z#*@+´]', '', regex=True)
         if event in ['800', '1500', '5000', '10000']:
@@ -208,6 +205,4 @@ class AthleticsDataScraper:
         df_combined = self.add_competition_id(df_combined)
     
         return df_combined
-    
-    
     
