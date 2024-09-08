@@ -131,20 +131,26 @@ class AthleticsDataScraper:
 
     
     def add_age_at_time_of_race(self, df):
+        print("Before conversion:", df['DOB'].head())  # Debug: Check the raw DOB values
+    
+        # Try converting DOB with different formats
         df['DOB'] = pd.to_datetime(df['DOB'], format='%d.%m.%Y', errors='coerce')
         df['Date'] = pd.to_datetime(df['Date'], format='%d.%m.%Y', errors='coerce')
-
-        # Adjust incorrect dates for DOB that may have wrong year formatting
+    
+        # If the year in DOB is incorrect (e.g., 2086 instead of 1986), adjust the year
         df['DOB'] = df['DOB'].apply(lambda x: x if pd.isnull(x) or x.year < 2023 else pd.Timestamp(year=x.year - 100, month=x.month, day=x.day))
-
-        # Calculate age, ignoring rows where 'Date' or 'DOB' are NaT (invalid dates)
+    
+        # Calculate age at the time of the race
         df['Age at Time of Race'] = df.apply(
             lambda row: row['Date'].year - row['DOB'].year - 
             ((row['Date'].month, row['Date'].day) < (row['DOB'].month, row['DOB'].day)) if pd.notnull(row['Date']) and pd.notnull(row['DOB']) else pd.NA,
             axis=1
         )
-
+    
+        print("After conversion:", df[['DOB', 'Age at Time of Race']].head())  # Debug: Check DOB after conversion
+    
         return df
+    
 
     def ensure_column_order(df):
         """Ensure the DataFrame columns are in the correct order."""
