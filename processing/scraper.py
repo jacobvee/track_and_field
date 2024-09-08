@@ -168,7 +168,7 @@ class AthleticsDataScraper:
             df_combined = pd.concat([df_legal, df_illegal], ignore_index=True)
         else:
             df_combined = df_legal
-    §
+    
         # Process and clean the combined data
         df_combined.dropna(inplace=True)
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
