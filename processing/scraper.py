@@ -177,21 +177,38 @@ class AthleticsDataScraper:
         else:
             df_combined = df_legal
     
-        # Handle invalid dates by replacing '00' with '01'
+        # Debug: Print raw 'DOB' and 'Date' before any processing
+        print("Raw DOB values before processing:", df_combined['DOB'].head())
+        print("Raw Date values before processing:", df_combined['Date'].head())
+    
+        # Handle invalid dates by replacing '00' with '01' (debugging this)
         df_combined['DOB'] = df_combined['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)
         df_combined['Date'] = df_combined['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
     
-        # Convert the Date and DOB columns to datetime
-        df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%y', errors='coerce')
-        df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
+        # Debug: Check the result after replacing invalid dates
+        print("DOB values after replacing invalid dates:", df_combined['DOB'].head())
+        print("Date values after replacing invalid dates:", df_combined['Date'].head())
     
+        # Convert the Date and DOB columns to datetime
+        print("Converting DOB to datetime...")
+        df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%y', errors='coerce')
+        print("Converted DOB values:", df_combined['DOB'].head())
+    
+        print("Converting Date to datetime...")
+        df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
+        print("Converted Date values:", df_combined['Date'].head())
+    
+        # Fill missing DOBs with mode DOB
         df_combined = self.fill_mode_dob(df_combined)
     
-        # Convert Timestamp to string format before updating Google Sheets
+        # Convert Timestamp to string before sending to Google Sheets
         df_combined['DOB'] = df_combined['DOB'].dt.strftime('%Y-%m-%d')
         df_combined['Date'] = df_combined['Date'].dt.strftime('%Y-%m-%d')
     
-        # Process the time and note columns
+        print("DOB values before sending to Google Sheets:", df_combined['DOB'].head())
+        print("Date values before sending to Google Sheets:", df_combined['Date'].head())
+    
+        # Continue processing...
         df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
         df_combined['Time'] = df_combined['Time'].str.replace(r'[a-zA-Z#*@+´]', '', regex=True)
         if event in ['800', '1500', '5000', '10000']:
