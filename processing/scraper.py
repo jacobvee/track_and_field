@@ -116,6 +116,7 @@ class AthleticsDataScraper:
         df.drop('Test', inplace=True, axis=1, errors='ignore')
         df['Legal'] = 'Y' if is_legal else 'N'
         has_wind = 'Wind' in df.columns
+        df['Wind'].fillna(inplace = True)
         return df, has_wind
     
     def add_all_conditions_rank(self, df, event):
