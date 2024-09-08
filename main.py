@@ -93,10 +93,12 @@ def update_google_sheets_in_batches(data_to_update, batch_size=10000, start_row=
 def process_and_update(df, gender, event, start_row):
     print(f"Processing data for {gender} - {event}...")
 
-    # Convert DOB and Date to string format for Google Sheets
+    # Ensure DOB and Date columns are in datetime format before using .dt.strftime
     if 'DOB' in df.columns:
+        df['DOB'] = pd.to_datetime(df['DOB'], errors='coerce')  # Convert to datetime
         df['DOB'] = df['DOB'].dt.strftime('%Y-%m-%d').fillna("N/A")
     if 'Date' in df.columns:
+        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')  # Convert to datetime
         df['Date'] = df['Date'].dt.strftime('%Y-%m-%d').fillna("N/A")
     
     # Debugging print to ensure DOB and Date are correct before upload
@@ -116,7 +118,6 @@ def process_and_update(df, gender, event, start_row):
     new_start_row = update_google_sheets_in_batches(data_to_update, start_row=start_row)
     
     return new_start_row  # Return the new starting row for the next event
-
 
 
 def main():
