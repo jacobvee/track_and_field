@@ -181,7 +181,7 @@ class AthleticsDataScraper:
         df.drop(columns=['DOB_mode'], inplace=True)
         
         return df
-    
+
     def get_combined_data(self, event):
         df_legal, has_wind = self.fetch_data(event, True)
         if has_wind:
@@ -189,34 +189,33 @@ class AthleticsDataScraper:
             df_combined = pd.concat([df_legal, df_illegal], ignore_index=True)
         else:
             df_combined = df_legal
-    
+
         # Process and clean the combined data
         df_combined.dropna(inplace=True)
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
         df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%Y', errors='coerce')
-    
+
         df_combined = self.fill_mode_dob(df_combined)
-    
+
         # Clean up time data and process further
         df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
         df_combined['Time'] = df_combined['Time'].str.replace(r'[a-zA-Z#*@+´]', '', regex=True)
-    
+
         if event in ['800', '1500', '5000', '10000']:
             df_combined['Time'] = df_combined['Time'].apply(self.convert_mmss_to_seconds)
-        
+
         df_combined['Time'] = df_combined['Time'].astype('float')
         df_combined['Sex'] = 'Male' if self.gender == 'male' else 'Female'
         df_combined['Event'] = event
-    
+
         # Rank and handle conditions
         df_combined = self.add_all_conditions_rank(df_combined, event)
         df_combined = self.add_age_at_time_of_race(df_combined)
-    
+
         df_combined = self.add_competition_id(df_combined)
-    
+
         # Ensure consistent column order
-        df_combined = ensure_column_order(df_combined)
-    
+        df_combined = self.ensure_column_order(df_combined)
+
         return df_combined
-    
-    
+
