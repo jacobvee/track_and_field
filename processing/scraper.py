@@ -143,6 +143,7 @@ class AthleticsDataScraper:
         return df
 
     def ensure_column_order(df):
+        """Ensure the DataFrame columns are in the correct order."""
         expected_columns = [
             'Rank', 'Time', 'Wind', 'Name', 'Country', 'DOB', 'Position_in_race', 
             'City', 'Date', 'Legal', 'Note', 'Sex', 'Event', 'All Conditions Rank', 
@@ -158,6 +159,7 @@ class AthleticsDataScraper:
         df = df[expected_columns]
 
         return df
+
 
 
     def add_competition_id(self, df):
@@ -179,7 +181,7 @@ class AthleticsDataScraper:
         df.drop(columns=['DOB_mode'], inplace=True)
         
         return df
-
+    
     def get_combined_data(self, event):
         df_legal, has_wind = self.fetch_data(event, True)
         if has_wind:
@@ -192,26 +194,29 @@ class AthleticsDataScraper:
         df_combined.dropna(inplace=True)
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
         df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%Y', errors='coerce')
-
-        # Fill missing DOB values using mode
+    
         df_combined = self.fill_mode_dob(df_combined)
-
+    
         # Clean up time data and process further
         df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
         df_combined['Time'] = df_combined['Time'].str.replace(r'[a-zA-Z#*@+´]', '', regex=True)
+    
         if event in ['800', '1500', '5000', '10000']:
             df_combined['Time'] = df_combined['Time'].apply(self.convert_mmss_to_seconds)
+        
         df_combined['Time'] = df_combined['Time'].astype('float')
-
         df_combined['Sex'] = 'Male' if self.gender == 'male' else 'Female'
         df_combined['Event'] = event
-
-        # Add conditions rank, age, and competition ID
+    
+        # Rank and handle conditions
         df_combined = self.add_all_conditions_rank(df_combined, event)
         df_combined = self.add_age_at_time_of_race(df_combined)
+    
         df_combined = self.add_competition_id(df_combined)
-
+    
         # Ensure consistent column order
         df_combined = ensure_column_order(df_combined)
-
+    
         return df_combined
+    
+    
