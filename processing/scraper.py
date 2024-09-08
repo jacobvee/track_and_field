@@ -128,18 +128,32 @@ class AthleticsDataScraper:
         return df
     
     def add_age_at_time_of_race(self, df):
-        # Convert DOB and Date columns to datetime with the correct format
-        df['DOB'] = pd.to_datetime(df['DOB'], format='%d.%m.%Y', errors='coerce')
-        df['Date'] = pd.to_datetime(df['Date'], format='%d.%m.%Y', errors='coerce')
+        # First, handle the raw DOB and Date values
+        print("Raw DOB values before processing:", df['DOB'].head())
+        print("Raw Date values before processing:", df['Date'].head())
     
-        # Correct misinterpreted dates
-        df['DOB'] = df['DOB'].apply(lambda x: x if pd.isnull(x) or x.year < 2023 else pd.Timestamp(year=x.year - 100, month=x.month, day=x.day))
+        # Handle invalid dates by replacing '00' in the day or month with '01'
+        df['DOB'] = df['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)
+        df['Date'] = df['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
     
-        # Calculate age at the time of race
+        # Convert 'DOB' and 'Date' to datetime, assuming 'dayfirst' format for European-style dates
+        df['DOB'] = pd.to_datetime(df['DOB'], dayfirst=True, errors='coerce')
+        df['Date'] = pd.to_datetime(df['Date'], dayfirst=True, errors='coerce')
+    
+        # Correct misinterpreted DOB years (for two-digit years interpreted as 20XX)
+        df['DOB'] = df['DOB'].apply(lambda x: x if pd.isnull(x) or x.year >= 1900 else pd.Timestamp(year=x.year - 100, month=x.month, day=x.day))
+    
+        # Print the processed DOB and Date values
+        print("Processed DOB values:", df['DOB'].head())
+        print("Processed Date values:", df['Date'].head())
+    
+        # Calculate age at the time of race, handling NaT (missing) values in both DOB and Date
         df['Age at Time of Race'] = df.apply(lambda row: row['Date'].year - row['DOB'].year - 
-                                             ((row['Date'].month, row['Date'].day) < (row['DOB'].month, row['DOB'].day)) if pd.notnull(row['DOB']) else pd.NA, axis=1)
+                                             ((row['Date'].month, row['Date'].day) < (row['DOB'].month, row['DOB'].day)) 
+                                             if pd.notnull(row['Date']) and pd.notnull(row['DOB']) else pd.NA, axis=1)
     
         return df
+
 
     def add_competition_id(self, df):
         # Ensure 'Date' is formatted correctly
@@ -170,57 +184,56 @@ class AthleticsDataScraper:
 
     def get_combined_data(self, event):
         df_legal, has_wind = self.fetch_data(event, True)
-    
+
         if has_wind:
             df_illegal, _ = self.fetch_data(event, False)
             df_combined = pd.concat([df_legal, df_illegal], ignore_index=True)
         else:
             df_combined = df_legal
-    
+
         # Debug: Print raw 'DOB' and 'Date' before any processing
         print("Raw DOB values before processing:", df_combined['DOB'].head())
         print("Raw Date values before processing:", df_combined['Date'].head())
-    
+
         # Handle invalid dates by replacing '00' with '01' (debugging this)
         df_combined['DOB'] = df_combined['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)
         df_combined['Date'] = df_combined['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
-    
+
         # Debug: Check the result after replacing invalid dates
         print("DOB values after replacing invalid dates:", df_combined['DOB'].head())
         print("Date values after replacing invalid dates:", df_combined['Date'].head())
-    
+
         # Convert the Date and DOB columns to datetime
         print("Converting DOB to datetime...")
         df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%y', errors='coerce')
         print("Converted DOB values:", df_combined['DOB'].head())
-    
+
         print("Converting Date to datetime...")
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
         print("Converted Date values:", df_combined['Date'].head())
-    
+
         # Fill missing DOBs with mode DOB
         df_combined = self.fill_mode_dob(df_combined)
-    
+
         # Convert Timestamp to string before sending to Google Sheets
         df_combined['DOB'] = df_combined['DOB'].dt.strftime('%Y-%m-%d')
         df_combined['Date'] = df_combined['Date'].dt.strftime('%Y-%m-%d')
-    
+
         print("DOB values before sending to Google Sheets:", df_combined['DOB'].head())
         print("Date values before sending to Google Sheets:", df_combined['Date'].head())
-    
+
         # Continue processing...
         df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
         df_combined['Time'] = df_combined['Time'].str.replace(r'[a-zA-Z#*@+´]', '', regex=True)
         if event in ['800', '1500', '5000', '10000']:
             df_combined['Time'] = df_combined['Time'].apply(self.convert_mmss_to_seconds)
-    
+
         df_combined['Time'] = df_combined['Time'].astype('float')
         df_combined['Sex'] = 'Male' if self.gender == 'male' else 'Female'
         df_combined['Event'] = event
-    
+
         df_combined = self.add_all_conditions_rank(df_combined, event)
         df_combined = self.add_age_at_time_of_race(df_combined)
         df_combined = self.add_competition_id(df_combined)
-    
+
         return df_combined
-    
