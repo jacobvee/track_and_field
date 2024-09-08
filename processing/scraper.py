@@ -136,9 +136,15 @@ class AthleticsDataScraper:
         df['DOB'] = df['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)
         df['Date'] = df['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
     
-        # Convert 'DOB' and 'Date' to datetime, assuming 'dayfirst' format for European-style dates
-        df['DOB'] = pd.to_datetime(df['DOB'], dayfirst=True, errors='coerce')
-        df['Date'] = pd.to_datetime(df['Date'], dayfirst=True, errors='coerce')
+        # Apply mixed-format parsing:
+        # Check if the DOB is in ISO format, then handle differently
+        df['DOB'] = df['DOB'].apply(lambda x: pd.to_datetime(x, format='%Y-%m-%d', errors='coerce') 
+                                    if re.match(r'\d{4}-\d{2}-\d{2}', str(x)) 
+                                    else pd.to_datetime(x, dayfirst=True, errors='coerce'))
+    
+        df['Date'] = df['Date'].apply(lambda x: pd.to_datetime(x, format='%Y-%m-%d', errors='coerce') 
+                                      if re.match(r'\d{4}-\d{2}-\d{2}', str(x)) 
+                                      else pd.to_datetime(x, dayfirst=True, errors='coerce'))
     
         # Correct misinterpreted DOB years (for two-digit years interpreted as 20XX)
         df['DOB'] = df['DOB'].apply(lambda x: x if pd.isnull(x) or x.year >= 1900 else pd.Timestamp(year=x.year - 100, month=x.month, day=x.day))
@@ -153,6 +159,7 @@ class AthleticsDataScraper:
                                              if pd.notnull(row['Date']) and pd.notnull(row['DOB']) else pd.NA, axis=1)
     
         return df
+
 
 
     def add_competition_id(self, df):
