@@ -4,7 +4,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-from processing.scraper import AthleticsDataScraper
+from processing.scraper import AthleticsDataScraper, ensure_column_order
 from processing.create_data_frames import run_all_events
 from processing.format_data_frames import process_combined_data
 
