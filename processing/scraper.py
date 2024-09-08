@@ -139,21 +139,7 @@ class AthleticsDataScraper:
         df['competition_id'] = df['competition_id'].apply(lambda x: hashlib.sha1(x.encode()).hexdigest())
 
         return df
-    
-    def fill_mode_dob(self, df):
-        # Calculate mode DOB for each athlete (Name)
-        mode_dob = df.groupby('Name')['DOB'].agg(lambda x: x.mode().iat[0] if not x.mode().empty else np.nan).reset_index()
-        
-        # Merge mode DOB back into original DataFrame
-        df = df.merge(mode_dob, on='Name', suffixes=('', '_mode'))
-        
-        # Replace DOB with mode DOB where DOB is missing or different from mode DOB
-        df['DOB'] = df.apply(lambda row: row['DOB_mode'] if pd.isnull(row['DOB']) or row['DOB'] != row['DOB_mode'] else row['DOB'], axis=1)
-        
-        # Drop temporary columns
-        df.drop(columns=['DOB_mode'], inplace=True)
-        
-        return df
+
 
     def get_combined_data(self, event):
         df_legal, has_wind = self.fetch_data(event, True)
@@ -166,14 +152,12 @@ class AthleticsDataScraper:
 
         # Handle invalid dates by replacing '00' with '01'
         df_combined['Date'] = df_combined['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
-        df_combined['DOB'] = df_combined['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)
+        df_combined['DOB'] =  df_combined['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)
 
         # Convert the Date and DOB columns to datetime
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
-        df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%Y', errors='coerce')
+        df_combined['DOB'] =  pd.to_datetime(df_combined['DOB'], format='%d.%m.%Y', errors='coerce')
 
-        # Fill mode DOB for missing or incorrect dates
-        df_combined = self.fill_mode_dob(df_combined)
 
         # Process the time and note columns
         df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
