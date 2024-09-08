@@ -116,7 +116,6 @@ class AthleticsDataScraper:
         df.drop('Test', inplace=True, axis=1, errors='ignore')
         df['Legal'] = 'Y' if is_legal else 'N'
         has_wind = 'Wind' in df.columns
-        df['Wind'].fillna(0,inplace = True)
         return df, has_wind
     
     def add_all_conditions_rank(self, df, event):
@@ -150,6 +149,7 @@ class AthleticsDataScraper:
             df_combined = pd.concat([df_legal, df_illegal], ignore_index=True)
         else:
             df_combined = df_legal
+            df_legal['Wind'].fillna(0,inplace=True)
         
 
         df_combined.drop(columns = 'DOB',axis=1)
@@ -168,5 +168,6 @@ class AthleticsDataScraper:
         # Add rankings and competition ID
         df_combined = self.add_all_conditions_rank(df_combined, event)
         df_combined = self.add_competition_id(df_combined)
+        
 
         return df_combined
