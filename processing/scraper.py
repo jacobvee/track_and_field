@@ -70,31 +70,39 @@ class AthleticsDataScraper:
         url = self.generate_url(event, is_legal)
         response = requests.get(url)
         response.raise_for_status()
-
+        
         soup = BeautifulSoup(response.content, 'html.parser')
         pre_tag = soup.find('pre')
         table_text = pre_tag.get_text()
         rows = table_text.split('\n')
-
+    
         def process_row(row):
             parts = re.split(r'\s{2,}', row)
             return [part.strip() for part in parts]
-
+    
         data = []
+        max_length = 0
         for row in rows:
             if row.strip():
                 processed_row = process_row(row)
                 data.append(processed_row)
-
+                max_length = max(max_length, len(processed_row))
+    
         # Use a fixed set of column names for consistency across all events
         column_names = ["Rank", "Time", "Wind", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
-
+        
+        # Pad rows to the max length with empty values (to avoid column mismatch)
+        for row in data:
+            while len(row) < max_length:
+                row.append(pd.NA)
+    
         # Create DataFrame with a fixed set of columns
-        df = pd.DataFrame(data, columns=column_names[:len(max(data, key=len))])  # Adjust based on the row with max columns
+        df = pd.DataFrame(data, columns=column_names[:max_length])  # Adjust based on the row with max columns
         df.drop('Test', inplace=True, axis=1, errors='ignore')
         df['Legal'] = 'Y' if is_legal else 'N'
-
+        
         return df, 'Wind' in df.columns  # Return whether 'Wind' column is present
+
 
     
     def add_all_conditions_rank(self, df, event):
