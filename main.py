@@ -90,13 +90,23 @@ def update_google_sheets_in_batches(data_to_update, batch_size=10000, start_row=
     except Exception as e:
         print(f"Failed to update Google Sheets: {e}")
 
-
 def process_and_update(df, gender, event, start_row):
     print(f"Processing data for {gender} - {event}...")
 
-    # Handle NaT values
-    df = df.fillna("N/A")  # Replace NaT with "N/A" or any placeholder
-    data_to_update = df.values.tolist()
+    # Convert DOB and Date to string format for Google Sheets
+    if 'DOB' in df.columns:
+        df['DOB'] = df['DOB'].dt.strftime('%Y-%m-%d').fillna("N/A")
+    if 'Date' in df.columns:
+        df['Date'] = df['Date'].dt.strftime('%Y-%m-%d').fillna("N/A")
+    
+    # Debugging print to ensure DOB and Date are correct before upload
+    print(f"DOB values before sending to Google Sheets for {gender} - {event}:")
+    print(df['DOB'].head())
+    print(f"Date values before sending to Google Sheets for {gender} - {event}:")
+    print(df['Date'].head())
+
+    # Convert DataFrame to list of lists for Google Sheets API
+    data_to_update = df.fillna("N/A").values.tolist()
 
     # Print the number of rows to be uploaded
     print(f"Data size for {gender} - {event}: {len(data_to_update)} rows")
@@ -106,6 +116,7 @@ def process_and_update(df, gender, event, start_row):
     new_start_row = update_google_sheets_in_batches(data_to_update, start_row=start_row)
     
     return new_start_row  # Return the new starting row for the next event
+
 
 
 def main():
