@@ -126,29 +126,6 @@ class AthleticsDataScraper:
             # This is a field event
             df['All Conditions Rank'] = df['Time'].rank(ascending=False, method='min')
         return df
-    
-    def add_age_at_time_of_race(self, df):
-        # Replace invalid DOB and Date formats
-        df['DOB'] = df['DOB'].replace(r'00\.00\.', '01.01.', regex=True)
-        df['Date'] = df['Date'].replace(r'00\.00\.', '01.01.', regex=True)
-    
-        # Convert DOB and Date columns to datetime with the correct format
-        df['DOB'] = pd.to_datetime(df['DOB'], format='%d.%m.%Y', errors='coerce')
-        df['Date'] = pd.to_datetime(df['Date'], format='%d.%m.%Y', errors='coerce')
-    
-        # Correct misinterpreted dates for DOB where the year is 2023+
-        df['DOB'] = df['DOB'].apply(lambda x: x if pd.isnull(x) or x.year < 2023 else pd.Timestamp(year=x.year - 100, month=x.month, day=x.day))
-    
-        # Calculate age at the time of race, ignoring rows where Date or DOB are NaT
-        df['Age at Time of Race'] = df.apply(
-            lambda row: row['Date'].year - row['DOB'].year - 
-            ((row['Date'].month, row['Date'].day) < (row['DOB'].month, row['DOB'].day)) if pd.notnull(row['Date']) and pd.notnull(row['DOB']) else pd.NA,
-            axis=1
-        )
-    
-        return df
-
-
 
 
     def add_competition_id(self, df):
@@ -208,7 +185,7 @@ class AthleticsDataScraper:
         df_combined['Event'] = event
 
         df_combined = self.add_all_conditions_rank(df_combined, event)
-        df_combined = self.add_age_at_time_of_race(df_combined)
+
 
         df_combined = self.add_competition_id(df_combined)
 

@@ -5,7 +5,7 @@ def ensure_column_order(df):
     expected_columns = [
         'Rank', 'Time', 'Wind', 'Name', 'Country', 'DOB', 'Position_in_race', 
         'City', 'Date', 'Legal', 'Note', 'Sex', 'Event', 'All Conditions Rank', 
-        'Age at Time of Race', 'competition_id', 'Track/Field'
+        'competition_id', 'Track/Field'
     ]
     
     # Add missing columns with NaN values
