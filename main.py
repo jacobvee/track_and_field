@@ -43,7 +43,7 @@ def clear_google_sheet():
         print(f"Failed to clear the Google Sheet: {e}")
 
 
-def update_google_sheets_in_batches(data_to_update, batch_size=10000, column_headers=None):
+def update_google_sheets_in_batches(data_to_update, batch_size=10000, start_row=2):
     total_rows = len(data_to_update)
     credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
 
@@ -51,7 +51,7 @@ def update_google_sheets_in_batches(data_to_update, batch_size=10000, column_hea
         print(f"Google credentials found at: {credentials_path}")
         try:
             credentials = service_account.Credentials.from_service_account_file(credentials_path)
-            print("Successfully loaded credentials...")
+            print("Successfully loaded credentials.")
         except Exception as e:
             print(f"Error loading credentials: {e}")
             raise
@@ -64,29 +64,14 @@ def update_google_sheets_in_batches(data_to_update, batch_size=10000, column_hea
     try:
         service = build('sheets', 'v4', credentials=credentials)
 
-        # Add column headers first if provided
-        if column_headers:
-            print("Adding column headers to the sheet...")
-            header_range = f"{RANGE_NAME}"
-            body = {'values': [column_headers]}
-            service.spreadsheets().values().update(
-                spreadsheetId=SPREADSHEET_ID,
-                range=header_range,
-                valueInputOption='RAW',
-                body=body
-            ).execute()
-            print(f"Column headers added: {column_headers}")
-
         # Iterate over batches and upload in parts
         for start in range(0, total_rows, batch_size):
             end = min(start + batch_size, total_rows)
             batch_data = data_to_update[start:end]
-            print(f"Updating rows {start + 1} to {end}...")
+            print(f"Updating rows {start_row} to {start_row + len(batch_data) - 1}...")
 
             # Update range dynamically based on the batch
-            range_start = start + 2  # Add 2 to account for the header row
-            range_end = range_start + len(batch_data) - 1
-            range_to_update = f"Sheet1!A{range_start}:Z{range_end}"  # Adjust this based on your sheet range
+            range_to_update = f"Sheet1!A{start_row}:Z{start_row + len(batch_data) - 1}"  # Adjust this based on your sheet range
             print(f"Updating range: {range_to_update}")
 
             body = {'values': batch_data}
@@ -98,23 +83,29 @@ def update_google_sheets_in_batches(data_to_update, batch_size=10000, column_hea
             ).execute()
 
             print(f"Batch updated {result.get('updatedCells')} cells.")
+            # Move start_row to the next available row for the next batch
+            start_row += len(batch_data)
+
+        return start_row  # Return the new starting row for the next update
     except Exception as e:
         print(f"Failed to update Google Sheets: {e}")
 
 
-def process_and_update(df, gender, event):
+def process_and_update(df, gender, event, start_row):
     print(f"Processing data for {gender} - {event}...")
 
     # Handle NaT values
     df = df.fillna("N/A")  # Replace NaT with "N/A" or any placeholder
     data_to_update = df.values.tolist()
 
-    # Extract column headers
-    column_headers = list(df.columns)
+    # Print the number of rows to be uploaded
+    print(f"Data size for {gender} - {event}: {len(data_to_update)} rows")
 
-    # Update Google Sheets in batches, and pass the column headers
+    # Update Google Sheets in batches, passing the updated start_row
     print(f"Updating Google Sheets for {gender} - {event} in batches...")
-    update_google_sheets_in_batches(data_to_update, column_headers=column_headers)
+    new_start_row = update_google_sheets_in_batches(data_to_update, start_row=start_row)
+    
+    return new_start_row  # Return the new starting row for the next event
 
 
 def main():
@@ -130,11 +121,22 @@ def main():
     combined_data_cleaned = process_combined_data(combined_data=combined_df)
     print("Processed combined data:", combined_data_cleaned)
 
+    # Extract column headers (assuming all DataFrames have the same columns)
+    first_event_df = next(iter(next(iter(combined_data_cleaned.values())).values()))
+    column_headers = list(first_event_df.columns)
+
+    # Add column headers to the sheet before adding data
+    update_google_sheets_in_batches([column_headers], start_row=1)
+
+    # Start uploading the data after the headers (row 2 onwards)
+    current_start_row = 2
+
     # Iterate over 'men' and 'women' keys in combined_data_cleaned dictionary
     for gender, event_data in combined_data_cleaned.items():
         for event, df in event_data.items():
             if isinstance(df, pd.DataFrame) and not df.empty:
-                process_and_update(df, gender, event)
+                # Update Google Sheets and get the next starting row
+                current_start_row = process_and_update(df, gender, event, current_start_row)
             else:
                 print(f"No data available for {gender} - {event}.")
 
