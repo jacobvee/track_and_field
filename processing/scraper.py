@@ -86,22 +86,31 @@ class AthleticsDataScraper:
             if row.strip():
                 processed_row = process_row(row)
                 data.append(processed_row)
+                # Update max_length based on the row with the most columns
                 max_length = max(max_length, len(processed_row))
     
         # Use a fixed set of column names for consistency across all events
+        # Adjust column names based on max_length
         column_names = ["Rank", "Time", "Wind", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
         
-        # Pad rows to the max length with empty values (to avoid column mismatch)
-        for row in data:
-            while len(row) < max_length:
-                row.append(pd.NA)
+        # Ensure all rows have the same length by padding with NaN if necessary
+        for i, row in enumerate(data):
+            if len(row) < max_length:
+                row.extend([pd.NA] * (max_length - len(row)))  # Add NaN for missing columns
+            elif len(row) > max_length:
+                # Truncate rows if they have more columns than expected
+                data[i] = row[:max_length]
     
+        # Ensure the number of column names matches the length of the data
+        column_names = column_names[:max_length]
+        
         # Create DataFrame with a fixed set of columns
-        df = pd.DataFrame(data, columns=column_names[:max_length])  # Adjust based on the row with max columns
+        df = pd.DataFrame(data, columns=column_names)
         df.drop('Test', inplace=True, axis=1, errors='ignore')
         df['Legal'] = 'Y' if is_legal else 'N'
         
         return df, 'Wind' in df.columns  # Return whether 'Wind' column is present
+
 
 
     
