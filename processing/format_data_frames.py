@@ -19,34 +19,29 @@ def ensure_column_order(df):
 
 
 def process_combined_data(combined_data):
+    cleaned_data = {'men': {}, 'women': {}}
+    
     for gender in ['men', 'women']:
-        print(f"Processing data for gender: {gender}")
+        print(f"Processing data for {gender}")
         if gender in combined_data:
             for event, df in combined_data[gender].items():
                 if isinstance(df, pd.DataFrame):
-                    print(f"Processing event: {event} for {gender}")
-                    print(f"DataFrame shape for {event}: {df.shape}")
-                    # Ensure the 'Wind' column is present in all DataFrames
+                    print(f"Processing event: {event} for {gender} with shape {df.shape}")
+                    
+                    # Ensure 'Wind' column exists in all DataFrames
                     if 'Wind' not in df.columns:
-                        df['Wind'] = pd.NA
-
-                    # Add 'Track/Field' column based on the event type
-                    df['Track/Field'] = df['Event'].apply(lambda x: 'Track' if any(char.isdigit() for char in x) else 'Field')
-
-                    # Ensure consistent column order
-                    df = ensure_column_order(df)
-
-                    # Replace empty DataFrames with None or valid DataFrames
-                    if df.empty:
-                        print(f"Skipping empty DataFrame for {event} ({gender})")
+                        df['Wind'] = 'N/A'  # Default to 'N/A' if missing
+                    
+                    # Drop rows with missing DOB, assuming 'DOB' is a column
+                    if 'DOB' in df.columns:
+                        df = df[df['DOB'] != 'N/A']  # Adjust this condition as necessary
+                    
+                    # If the DataFrame is still valid, save it
+                    if not df.empty:
+                        cleaned_data[gender][event] = df
                     else:
-                        combined_data[gender][event] = df
+                        print(f"Skipping empty DataFrame for {event} ({gender})")
                 else:
-                    print(f"No DataFrame found for event {event}. Skipping...")
-        else:
-            print(f"No data found for gender: {gender}")
-
-    return combined_data
-
-
-
+                    print(f"Invalid data for {event}, skipping...")
+    
+    return cleaned_data
