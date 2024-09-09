@@ -85,26 +85,30 @@ class AthleticsDataScraper:
             return np.nan
     
     def fetch_data(self, event, is_legal):
-       url = self.generate_url(event, is_legal)
-       response = requests.get(url)
-       response.raise_for_status()
+        url = self.generate_url(event, is_legal)
+        print(f"Fetching data from URL: {url}")  # Add this
+        response = requests.get(url)
+        response.raise_for_status()
 
-       soup = BeautifulSoup(response.content, 'html.parser')
-       pre_tag = soup.find('pre')
-       table_text = pre_tag.get_text()
-       rows = table_text.split('\n')
+        soup = BeautifulSoup(response.content, 'html.parser')
+        pre_tag = soup.find('pre')
+        if pre_tag:
+            print(f"Successfully fetched data for {event}, legal={is_legal}")  # Add this
+        else:
+            print(f"No <pre> tag found for {event}, legal={is_legal}")  # Add this
+        table_text = pre_tag.get_text()
+        rows = table_text.split('\n')
 
-       def process_row(row):
-           parts = re.split(r'\s{2,}', row)
-           return [part.strip() for part in parts]
+        data = []
+        for row in rows:
+            if row.strip():
+                processed_row = re.split(r'\s{2,}', row)
+                data.append([part.strip() for part in processed_row])
 
-       data = []
-       max_length = 0
-       for row in rows:
-           if row.strip():
-               processed_row = process_row(row)
-               data.append(processed_row)
-               max_length = max(max_length, len(processed_row))
+        print(f"Number of rows fetched for {event}: {len(data)}")  # Add this
+
+        if len(data) == 0:
+            return None, False  # No data found, return None
 
        # Adjust column names based on whether there is wind data or not
        if max_length == 10:  # Cases where there is wind data
@@ -149,16 +153,21 @@ class AthleticsDataScraper:
 
         return df
 
-
+    
     def get_combined_data(self, event):
-        df_legal = self.fetch_data(event, True)     
-        # Fetch illegal data if available
-        if 'Wind' in df_legal.columns and 'Wind' not in df_legal['Wind'].unique():
-            df_illegal = self.fetch_data(event, False)
+        df_legal, has_wind = self.fetch_data(event, True)
+        
+        if df_legal is None:
+            print(f"No data fetched for {event} (legal).")  # Add this
+    
+        if has_wind:
+            df_illegal, _ = self.fetch_data(event, False)
+            if df_illegal is None:
+                print(f"No data fetched for {event} (illegal).")  # Add this
             df_combined = pd.concat([df_legal, df_illegal], ignore_index=True)
         else:
-            df_combined = df_legal      
-        # Handle invalid dates by replacing '00' with '01'
+            df_combined = df_legal     
+            # Handle invalid dates by replacing '00' with '01'
         df_combined['Date'] = df_combined['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
         df_combined['DOB'] = df_combined['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)      
         # Convert Date and DOB columns to datetime
