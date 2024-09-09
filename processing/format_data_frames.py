@@ -1,6 +1,7 @@
-import pandas as pd
+ import pandas as pd
 
 def ensure_column_order(df):
+    """Ensure the DataFrame columns are in the correct order."""
     expected_columns = [
         'Rank', 'Time', 'Wind', 'Name', 'Country', 'DOB', 'Position_in_race', 
         'City', 'Date', 'Legal', 'Note', 'Sex', 'Event', 'All Conditions Rank', 
@@ -19,29 +20,16 @@ def ensure_column_order(df):
 
 
 def process_combined_data(combined_data):
-    cleaned_data = {'men': {}, 'women': {}}
-    
     for gender in ['men', 'women']:
-        print(f"Processing data for {gender}")
-        if gender in combined_data:
-            for event, df in combined_data[gender].items():
-                if isinstance(df, pd.DataFrame):
-                    print(f"Processing event: {event} for {gender} with shape {df.shape}")
-                    
-                    # Ensure 'Wind' column exists in all DataFrames
-                    if 'Wind' not in df.columns:
-                        df['Wind'] = 'N/A'  # Default to 'N/A' if missing
-                    
-                    # Drop rows with missing DOB, assuming 'DOB' is a column
-                    if 'DOB' in df.columns:
-                        df = df[df['DOB'] != 'N/A']  # Adjust this condition as necessary
-                    
-                    # If the DataFrame is still valid, save it
-                    if not df.empty:
-                        cleaned_data[gender][event] = df
-                    else:
-                        print(f"Skipping empty DataFrame for {event} ({gender})")
-                else:
-                    print(f"Invalid data for {event}, skipping...")
-    
-    return cleaned_data
+        for event, df in combined_data[gender].items():
+            # Ensure the 'Wind' column is present in all DataFrames
+            if 'Wind' not in df.columns:
+                df['Wind'] = pd.NA
+
+            # Add 'Track/Field' column based on the event type
+            df['Track/Field'] = df['Event'].apply(lambda x: 'Track' if any(char.isdigit() for char in x) else 'Field')
+
+            # Ensure consistent column order
+            df = ensure_column_order(df)
+
+    return combined_data
