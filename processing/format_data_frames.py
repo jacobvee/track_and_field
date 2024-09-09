@@ -1,4 +1,4 @@
- import pandas as pd
+import pandas as pd
 
 def ensure_column_order(df):
     """Ensure the DataFrame columns are in the correct order."""
