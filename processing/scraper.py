@@ -110,26 +110,26 @@ class AthleticsDataScraper:
         if len(data) == 0:
             return None, False  # No data found, return None
 
-       # Adjust column names based on whether there is wind data or not
-       if max_length == 10:  # Cases where there is wind data
-           column_names = ["Test", "Rank", "Time", "Wind", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
-       else:  # Cases where there is no wind data
+        # Adjust column names based on whether there is wind data or not
+        if max_length == 10:  # Cases where there is wind data
+            column_names = ["Test", "Rank", "Time", "Wind", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
+        else:  # Cases where there is no wind data
            column_names = ["Test", "Rank", "Time", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
 
-       df = pd.DataFrame(data, columns=column_names[:max_length])
-       df.drop('Test', inplace=True, axis=1, errors='ignore')
-
-       # Add "Wind" column with 'N/A' where missing
-       if 'Wind' not in df.columns:
-           df['Wind'] = "N/A"  # Add Wind column with N/A values
-       else:
-           df['Wind'] = df['Wind'].fillna("N/A")  # Replace missing wind data with "N/A"
-
-       df['Legal'] = 'Y' if is_legal else 'N'
-
-       return df
-
-
+        df = pd.DataFrame(data, columns=column_names[:max_length])
+        df.drop('Test', inplace=True, axis=1, errors='ignore')
+ 
+        # Add "Wind" column with 'N/A' where missing
+        if 'Wind' not in df.columns:
+            df['Wind'] = "N/A"  # Add Wind column with N/A values
+        else:
+            df['Wind'] = df['Wind'].fillna("N/A")  # Replace missing wind data with "N/A"
+ 
+        df['Legal'] = 'Y' if is_legal else 'N'
+ 
+        return df
+ 
+ 
     
     def add_all_conditions_rank(self, df, event):
         if re.search(r'\d', event):
@@ -153,13 +153,13 @@ class AthleticsDataScraper:
 
         return df
 
-    
+
     def get_combined_data(self, event):
         df_legal, has_wind = self.fetch_data(event, True)
-        
+
         if df_legal is None:
             print(f"No data fetched for {event} (legal).")  # Add this
-    
+
         if has_wind:
             df_illegal, _ = self.fetch_data(event, False)
             if df_illegal is None:

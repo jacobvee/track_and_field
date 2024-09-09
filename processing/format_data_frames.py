@@ -1,7 +1,6 @@
 import pandas as pd
 
 def ensure_column_order(df):
-    """Ensure the DataFrame columns are in the correct order."""
     expected_columns = [
         'Rank', 'Time', 'Wind', 'Name', 'Country', 'DOB', 'Position_in_race', 
         'City', 'Date', 'Legal', 'Note', 'Sex', 'Event', 'All Conditions Rank', 
