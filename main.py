@@ -102,7 +102,8 @@ def process_and_update(df, gender, event, start_row):
     # Ensure DOB and Date columns are in datetime format before using .dt.strftime
     if 'DOB' in df.columns:
         df['DOB'] = pd.to_datetime(df['DOB'], errors='coerce')  # Convert to datetime
-        df['DOB'] = df['DOB'].dt.strftime('%Y-%m-%d').fillna("N/A")  # Only fill with 'N/A' if the DOB is actually missing (NaT)
+        # Proper handling to replace only missing DOBs with 'N/A'
+        df['DOB'] = df['DOB'].apply(lambda x: x.strftime('%Y-%m-%d') if pd.notnull(x) else 'N/A')
 
     if 'Date' in df.columns:
         df['Date'] = pd.to_datetime(df['Date'], errors='coerce')  # Convert to datetime
@@ -127,6 +128,7 @@ def process_and_update(df, gender, event, start_row):
     new_start_row = update_google_sheets_in_batches(data_to_update, start_row=start_row)
     
     return new_start_row  # Return the new starting row for the next event
+
 
 
 

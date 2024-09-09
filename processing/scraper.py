@@ -88,7 +88,7 @@ class AthleticsDataScraper:
         url = self.generate_url(event, is_legal)
         response = requests.get(url)
         response.raise_for_status()
-        
+
         soup = BeautifulSoup(response.content, 'html.parser')
         pre_tag = soup.find('pre')
         table_text = pre_tag.get_text()
@@ -106,17 +106,19 @@ class AthleticsDataScraper:
                 data.append(processed_row)
                 max_length = max(max_length, len(processed_row))
 
-        # Define column names based on the maximum row length
-        if max_length == 10:
-            column_names = ["Test", "Rank", "Time", "Wind", "Name", "Country","DOB", "Position_in_race", "City", "Date"]
+        # Define column names based on whether the event has wind
+        if event in ['100m', '200m', 'long', 'trip', '110h']:  # List events that have wind
+            column_names = ["Test", "Rank", "Time", "Wind", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
         else:
             column_names = ["Test", "Rank", "Time", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
 
         df = pd.DataFrame(data, columns=column_names[:max_length])
         df.drop('Test', inplace=True, axis=1, errors='ignore')
         df['Legal'] = 'Y' if is_legal else 'N'
+
         has_wind = 'Wind' in df.columns
         return df, has_wind
+
     
     def add_all_conditions_rank(self, df, event):
         if re.search(r'\d', event):
@@ -154,23 +156,18 @@ class AthleticsDataScraper:
         df_combined['Date'] = df_combined['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
         df_combined['DOB'] = df_combined['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)
     
-        # Convert the Date and DOB columns to datetime
+        # Convert Date and DOB columns to datetime
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
         df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%Y', errors='coerce')
     
-        # Handle missing wind data
-        if 'Wind' in df_combined.columns:
-            df_combined['Wind'].fillna(0, inplace=True)
-        else:
-            # Add 'Wind' column with 0 if it's missing
-            df_combined['Wind'] = 0
+        # Replace missing DOB (NaT) with 'N/A' explicitly
+        df_combined['DOB'] = df_combined['DOB'].apply(lambda x: x.strftime('%Y-%m-%d') if pd.notnull(x) else 'N/A')
     
-        # Process the time and note columns
-        df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
-        df_combined['Time'] = df_combined['Time'].str.replace(r'[a-zA-Z#*@+´]', '', regex=True)
-        
-        if event in ['800', '1500', '5000', '10000']:
-            df_combined['Time'] = df_combined['Time'].apply(self.convert_mmss_to_seconds)
+        # Ensure no chained assignments for Wind column
+        if 'Wind' not in df_combined.columns:
+            df_combined['Wind'] = pd.NA  # Add Wind column if missing
+        else:
+            df_combined['Wind'] = df_combined['Wind'].fillna(0)  # Explicitly assign after fillna
     
         df_combined['Time'] = df_combined['Time'].astype('float')
         df_combined['Sex'] = 'Male' if self.gender == 'male' else 'Female'
@@ -181,4 +178,6 @@ class AthleticsDataScraper:
         df_combined = self.add_competition_id(df_combined)
     
         return df_combined
-    
+
+
+
