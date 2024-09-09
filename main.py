@@ -130,16 +130,26 @@ def main():
     # Scrape and clean data
     print("Running event scraper...")
     combined_df = run_all_events()
-    
+
     print("Processing combined data...")
     combined_data_cleaned = process_combined_data(combined_data=combined_df)
 
-    # Extract column headers (assuming all DataFrames have the same columns)
-    first_event_df = next(iter(next(iter(combined_data_cleaned.values())).values()))
-    column_headers = list(first_event_df.columns)
+    # Debugging: Print combined_data_cleaned keys
+    print(f"Combined data cleaned keys: {combined_data_cleaned.keys()}")
+    
+    # Print the number of events processed for men and women
+    print(f"Events for men: {len(combined_data_cleaned.get('men', {}))}")
+    print(f"Events for women: {len(combined_data_cleaned.get('women', {}))}")
 
-    # Add column headers to the sheet before adding data
-    update_google_sheets_in_batches([column_headers], start_row=1)
+    # Extract column headers (assuming all DataFrames have the same columns)
+    try:
+        first_event_df = next(iter(next(iter(combined_data_cleaned.values())).values()))
+        column_headers = list(first_event_df.columns)
+        # Add column headers to the sheet before adding data
+        update_google_sheets_in_batches([column_headers], start_row=1)
+    except StopIteration:
+        print("No valid data found in the combined data.")
+        return
 
     # Start uploading the data after the headers (row 2 onwards)
     current_start_row = 2
@@ -152,6 +162,7 @@ def main():
                 current_start_row = process_and_update(df, gender, event, current_start_row)
             else:
                 print(f"No data available for {gender} - {event}.")
+
 
 if __name__ == '__main__':
     main()

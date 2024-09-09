@@ -25,7 +25,7 @@ def process_combined_data(combined_data):
             print(f"DataFrame shape for {event}: {df.shape if isinstance(df, pd.DataFrame) else 'No DataFrame'}")
 
             # Ensure the 'Wind' column is present in all DataFrames
-            if isinstance(df, pd.DataFrame):
+            if isinstance(df, pd.DataFrame) and not df.empty:
                 if 'Wind' not in df.columns:
                     df['Wind'] = pd.NA
 
@@ -37,5 +37,6 @@ def process_combined_data(combined_data):
             else:
                 print(f"No DataFrame found for event {event}. Skipping...")
     return combined_data
+
 
 
