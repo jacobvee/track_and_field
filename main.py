@@ -2,7 +2,6 @@ import os
 import pandas as pd
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
 
 from processing.scraper import AthleticsDataScraper, ensure_column_order
 from processing.create_data_frames import run_all_events
@@ -41,7 +40,6 @@ def clear_google_sheet():
         
     except Exception as e:
         print(f"Failed to clear the Google Sheet: {e}")
-
 
 def update_google_sheets_in_batches(data_to_update, batch_size=10000, start_row=2):
     total_rows = len(data_to_update)
@@ -93,21 +91,17 @@ def update_google_sheets_in_batches(data_to_update, batch_size=10000, start_row=
 def process_and_update(df, gender, event, start_row):
     print(f"Processing data for {gender} - {event}...")
 
-    # Ensure 'Wind' column is present and fill missing values with 0
+    # Ensure 'Wind' column is present and fill missing values with "N/A"
     if 'Wind' in df.columns:
-        df['Wind'] = df['Wind'].fillna(0)
+        df['Wind'] = df['Wind'].fillna("N/A")
     else:
-        df['Wind'] = 0  # If Wind column is missing entirely, set it to 0 for all rows
+        df['Wind'] = "N/A"  # If Wind column is missing entirely, set it to "N/A" for all rows
     
     # Ensure DOB and Date columns are in datetime format before using .dt.strftime
     if 'DOB' in df.columns:
-        df['DOB'] = pd.to_datetime(df['DOB'], errors='coerce')  # Convert to datetime
-        # Proper handling to replace only missing DOBs with 'N/A'
-        df['DOB'] = df['DOB'].apply(lambda x: x.strftime('%Y-%m-%d') if pd.notnull(x) else 'N/A')
-
+        df['DOB'] = df['DOB'].fillna("N/A")
     if 'Date' in df.columns:
-        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')  # Convert to datetime
-        df['Date'] = df['Date'].dt.strftime('%Y-%m-%d').fillna("N/A")
+        df['Date'] = df['Date'].fillna("N/A")
     
     # Debugging print to ensure Wind, DOB, and Date are correct before upload
     print(f"Wind values before sending to Google Sheets for {gender} - {event}:")
@@ -128,9 +122,6 @@ def process_and_update(df, gender, event, start_row):
     new_start_row = update_google_sheets_in_batches(data_to_update, start_row=start_row)
     
     return new_start_row  # Return the new starting row for the next event
-
-
-
 
 def main():
     # Clear the Google Sheet before updating
