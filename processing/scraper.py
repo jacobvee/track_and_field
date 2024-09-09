@@ -165,13 +165,14 @@ class AthleticsDataScraper:
 
 
     def get_combined_data(self, event):
-        df_legal = self.fetch_data(event, True)
+        # Unpack the tuple returned by fetch_data
+        df_legal, has_wind = self.fetch_data(event, True)
+        
         if df_legal is None:
             print(f"No data fetched for {event} (legal).")
             return None
     
-        has_wind = 'Wind' in df_legal.columns
-    
+        # Fetch the illegal data if there is wind information
         if has_wind:
             df_illegal, _ = self.fetch_data(event, False)
             if df_illegal is None:
@@ -213,4 +214,4 @@ class AthleticsDataScraper:
         df_combined = self.add_competition_id(df_combined)
     
         return df_combined
-    
+
