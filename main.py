@@ -124,45 +124,67 @@ def process_and_update(df, gender, event, start_row):
     return new_start_row  # Return the new starting row for the next event
 
 def main():
-    # Clear the Google Sheet before updating
-    clear_google_sheet()
-
-    # Scrape and clean data
-    print("Running event scraper...")
-    combined_df = run_all_events()
-
-    print("Processing combined data...")
-    combined_data_cleaned = process_combined_data(combined_data=combined_df)
-
-    # Debugging: Print combined_data_cleaned keys
-    print(f"Combined data cleaned keys: {combined_data_cleaned.keys()}")
+    # Authenticate and clear the Google Sheet before uploading new data
+    credentials_path = "credentials.json"
+    service = get_google_sheets_service(credentials_path)
+    sheet_id = 'your_google_sheet_id'  # Replace with your Google Sheet ID
+    range_name = 'Sheet1!A1:Z1'
     
-    # Print the number of events processed for men and women
-    print(f"Events for men: {len(combined_data_cleaned.get('men', {}))}")
-    print(f"Events for women: {len(combined_data_cleaned.get('women', {}))}")
+    # Clear the sheet initially to avoid overlapping data
+    clear_google_sheet(service, sheet_id, range_name)
+    
+    # Fetch all event data for men and women
+    print("Running event scraper...")
+    combined_data = run_all_events()
 
-    # Extract column headers (assuming all DataFrames have the same columns)
-    try:
-        first_event_df = next(iter(next(iter(combined_data_cleaned.values())).values()))
-        column_headers = list(first_event_df.columns)
-        # Add column headers to the sheet before adding data
-        update_google_sheets_in_batches([column_headers], start_row=1)
-    except StopIteration:
+    # Process and clean the combined data
+    print("Processing combined data...")
+    combined_data_cleaned = process_combined_data(combined_data)
+    
+    # Log the keys in the cleaned data dictionary for both genders
+    print(f"Combined data cleaned keys: {combined_data_cleaned.keys()}")
+    print(f"Events for men: {len(combined_data_cleaned['men'])}")
+    print(f"Events for women: {len(combined_data_cleaned['women'])}")
+    
+    # Check if there are any valid events for either men or women
+    if len(combined_data_cleaned['men']) == 0 and len(combined_data_cleaned['women']) == 0:
         print("No valid data found in the combined data.")
         return
+    
+    # Select the first valid event's DataFrame to verify that valid data exists
+    first_event_df = next(iter(next(iter(combined_data_cleaned.values())).values()))
+    print(f"First valid event DataFrame: {first_event_df.shape}")
+    
+    # Upload the processed data to Google Sheets, in batches if necessary
+    print("Uploading data to Google Sheets...")
+    for gender, events_data in combined_data_cleaned.items():
+        for event, df in events_data.items():
+            print(f"Processing data for {gender} - {event}...")
+            
+            # Ensure 'Wind' values are set as string if numeric types might be present
+            df['Wind'] = df['Wind'].astype(str)
+            df['DOB'] = df['DOB'].astype(str)  # Ensure DOB is a string before sending
 
-    # Start uploading the data after the headers (row 2 onwards)
-    current_start_row = 2
+            # Log the current state before sending to Google Sheets
+            print(f"Wind values before sending to Google Sheets for {gender} - {event}:")
+            print(df['Wind'].head())
+            
+            print(f"DOB values before sending to Google Sheets for {gender} - {event}:")
+            print(df['DOB'].head())
+            
+            print(f"Date values before sending to Google Sheets for {gender} - {event}:")
+            print(df['Date'].head())
 
-    # Iterate over 'men' and 'women' keys in combined_data_cleaned dictionary
-    for gender, event_data in combined_data_cleaned.items():
-        for event, df in event_data.items():
-            if isinstance(df, pd.DataFrame) and not df.empty:
-                # Update Google Sheets and get the next starting row
-                current_start_row = process_and_update(df, gender, event, current_start_row)
-            else:
-                print(f"No data available for {gender} - {event}.")
+            # Split the data into manageable chunks (if required) and send to Google Sheets
+            chunk_size = 1000  # Adjust based on Google Sheets batch limits
+            total_rows = df.shape[0]
+            for start_row in range(0, total_rows, chunk_size):
+                end_row = min(start_row + chunk_size, total_rows)
+                chunk_df = df.iloc[start_row:end_row]
+                
+                # Define the range for this chunk
+                range_name = f"Sheet1!A{start_row + 2}:Z{start_row + 2 + chunk_size - 1}"
+                update_google_sheet(service, sheet_id, range_name, chunk_df)
+                print(f"Uploaded rows {start_row + 2} to {end_row} for {gender} - {event}")
 
-
-if __name__ == '__main__':
-    main()
+    print("Data upload complete.")
