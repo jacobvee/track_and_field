@@ -20,22 +20,32 @@ def ensure_column_order(df):
 
 def process_combined_data(combined_data):
     for gender in ['men', 'women']:
-        for event, df in combined_data[gender].items():
-            print(f"Processing event: {event} for gender: {gender}")
-            print(f"DataFrame shape for {event}: {df.shape if isinstance(df, pd.DataFrame) else 'No DataFrame'}")
+        print(f"Processing data for gender: {gender}")
+        if gender in combined_data:
+            for event, df in combined_data[gender].items():
+                if isinstance(df, pd.DataFrame):
+                    print(f"Processing event: {event} for {gender}")
+                    print(f"DataFrame shape for {event}: {df.shape}")
+                    # Ensure the 'Wind' column is present in all DataFrames
+                    if 'Wind' not in df.columns:
+                        df['Wind'] = pd.NA
 
-            # Ensure the 'Wind' column is present in all DataFrames
-            if isinstance(df, pd.DataFrame) and not df.empty:
-                if 'Wind' not in df.columns:
-                    df['Wind'] = pd.NA
+                    # Add 'Track/Field' column based on the event type
+                    df['Track/Field'] = df['Event'].apply(lambda x: 'Track' if any(char.isdigit() for char in x) else 'Field')
 
-                # Add 'Track/Field' column based on the event type
-                df['Track/Field'] = df['Event'].apply(lambda x: 'Track' if any(char.isdigit() for char in x) else 'Field')
+                    # Ensure consistent column order
+                    df = ensure_column_order(df)
 
-                # Ensure consistent column order
-                df = ensure_column_order(df)
-            else:
-                print(f"No DataFrame found for event {event}. Skipping...")
+                    # Replace empty DataFrames with None or valid DataFrames
+                    if df.empty:
+                        print(f"Skipping empty DataFrame for {event} ({gender})")
+                    else:
+                        combined_data[gender][event] = df
+                else:
+                    print(f"No DataFrame found for event {event}. Skipping...")
+        else:
+            print(f"No data found for gender: {gender}")
+
     return combined_data
 
 
