@@ -86,49 +86,59 @@ class AthleticsDataScraper:
     
     def fetch_data(self, event, is_legal):
         url = self.generate_url(event, is_legal)
-        print(f"Fetching data from URL: {url}")  # Add this
+        print(f"Fetching data from URL: {url}")
         response = requests.get(url)
         response.raise_for_status()
-
+    
         soup = BeautifulSoup(response.content, 'html.parser')
         pre_tag = soup.find('pre')
+        
         if pre_tag:
-            print(f"Successfully fetched data for {event}, legal={is_legal}")  # Add this
+            print(f"Successfully fetched data for {event}, legal={is_legal}")
         else:
-            print(f"No <pre> tag found for {event}, legal={is_legal}")  # Add this
+            print(f"No <pre> tag found for {event}, legal={is_legal}")
+            return None, False  # Exit early if no <pre> tag is found
+        
         table_text = pre_tag.get_text()
         rows = table_text.split('\n')
-
+    
+        def process_row(row):
+            parts = re.split(r'\s{2,}', row)
+            return [part.strip() for part in parts]
+    
         data = []
+        max_length = 0  # Ensure max_length is initialized before the loop
         for row in rows:
             if row.strip():
-                processed_row = re.split(r'\s{2,}', row)
-                data.append([part.strip() for part in processed_row])
-
-        print(f"Number of rows fetched for {event}: {len(data)}")  # Add this
-
+                processed_row = process_row(row)
+                data.append(processed_row)
+                max_length = max(max_length, len(processed_row))  # Track the longest row (number of columns)
+    
+        print(f"Number of rows fetched for {event}: {len(data)}")
+        print(f"Max length (number of columns) in the data: {max_length}")
+    
         if len(data) == 0:
             return None, False  # No data found, return None
-
-        # Adjust column names based on whether there is wind data or not
+        
+        # Define column names based on the maximum row length (wind vs no wind)
         if max_length == 10:  # Cases where there is wind data
             column_names = ["Test", "Rank", "Time", "Wind", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
         else:  # Cases where there is no wind data
-           column_names = ["Test", "Rank", "Time", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
-
+            column_names = ["Test", "Rank", "Time", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
+    
         df = pd.DataFrame(data, columns=column_names[:max_length])
         df.drop('Test', inplace=True, axis=1, errors='ignore')
- 
+    
         # Add "Wind" column with 'N/A' where missing
         if 'Wind' not in df.columns:
             df['Wind'] = "N/A"  # Add Wind column with N/A values
         else:
             df['Wind'] = df['Wind'].fillna("N/A")  # Replace missing wind data with "N/A"
- 
+    
         df['Legal'] = 'Y' if is_legal else 'N'
- 
-        return df
- 
+        
+        return df, 'Wind' in df.columns
+
  
     
     def add_all_conditions_rank(self, df, event):
