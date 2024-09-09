@@ -44,7 +44,7 @@ class AthleticsDataScraper:
             '800m':   ('m_800ok.htm','m_800no.htm'),
             '1500m': ('m_1500ok.htm','m_1500no.htm'),
             '5000m':   ('m_5000ok.htm','m_5000no.htm'),
-            '10000':   ('m_10kok.htm','m_10kno.htm')
+            '10000':   ('m_10kok.htm','10kno.htm')
         }
         special_cases_female = {
             '100m': ('w_100ok.htm', 'w_100no.htm'),
@@ -56,7 +56,7 @@ class AthleticsDataScraper:
             'disc': ('wdiscok.htm','wdiscno.htm'),
             'jave': ('wjaveok.htm','wjaveno.htm'),
             'hamm': ('whammok.htm','whammno.htm'),
-            'hept': ('whepaok.htm','whepano.htm'),
+            'hept': ('whepaok.htm','wheptno.htm'),
             '60m':   ('w60mok.htm','w60mno.htm'),
             '800m':   ('w_800ok.htm','w_800no.htm'),
             '1500m': ('w_1500ok.htm','w_1500no.htm'),
@@ -86,19 +86,11 @@ class AthleticsDataScraper:
     
     def fetch_data(self, event, is_legal):
         url = self.generate_url(event, is_legal)
-        print(f"Fetching data from URL: {url}")
         response = requests.get(url)
         response.raise_for_status()
-
+        
         soup = BeautifulSoup(response.content, 'html.parser')
         pre_tag = soup.find('pre')
-
-        if pre_tag:
-            print(f"Successfully fetched data for {event}, legal={is_legal}")
-        else:
-            print(f"No <pre> tag found for {event}, legal={is_legal}")
-            return None, False  # Exit early if no <pre> tag is found
-
         table_text = pre_tag.get_text()
         rows = table_text.split('\n')
 
@@ -107,39 +99,24 @@ class AthleticsDataScraper:
             return [part.strip() for part in parts]
 
         data = []
-        max_length = 0  # Ensure max_length is initialized before the loop
+        max_length = 0
         for row in rows:
             if row.strip():
                 processed_row = process_row(row)
                 data.append(processed_row)
-                max_length = max(max_length, len(processed_row))  # Track the longest row (number of columns)
+                max_length = max(max_length, len(processed_row))
 
-        print(f"Number of rows fetched for {event}: {len(data)}")
-        print(f"Max length (number of columns) in the data: {max_length}")
-
-        if len(data) == 0:
-            return None, False  # No data found, return None
-
-        # Define column names based on the maximum row length (wind vs no wind)
-        if max_length == 10:  # Cases where there is wind data
-            column_names = ["Test", "Rank", "Time", "Wind", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
-        else:  # Cases where there is no wind data
+        # Define column names based on the maximum row length
+        if max_length == 10:
+            column_names = ["Test", "Rank", "Time", "Wind", "Name", "Country","DOB", "Position_in_race", "City", "Date"]
+        else:
             column_names = ["Test", "Rank", "Time", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
 
         df = pd.DataFrame(data, columns=column_names[:max_length])
         df.drop('Test', inplace=True, axis=1, errors='ignore')
-
-        # Add "Wind" column with 'N/A' where missing
-        if 'Wind' not in df.columns:
-            df['Wind'] = "N/A"  # Add Wind column with N/A values
-        else:
-            df['Wind'] = df['Wind'].fillna("N/A")  # Replace missing wind data with "N/A"
-
         df['Legal'] = 'Y' if is_legal else 'N'
-
-        return df, 'Wind' in df.columns
-
- 
+        has_wind = 'Wind' in df.columns
+        return df, has_wind
     
     def add_all_conditions_rank(self, df, event):
         if re.search(r'\d', event):
@@ -165,47 +142,37 @@ class AthleticsDataScraper:
 
 
     def get_combined_data(self, event):
-        # Unpack the tuple returned by fetch_data
         df_legal, has_wind = self.fetch_data(event, True)
-        
-        if df_legal is None:
-            print(f"No data fetched for {event} (legal).")
-            return None
     
-        # Fetch the illegal data if there is wind information
         if has_wind:
             df_illegal, _ = self.fetch_data(event, False)
-            if df_illegal is None:
-                print(f"No data fetched for {event} (illegal).")
-                return None
             df_combined = pd.concat([df_legal, df_illegal], ignore_index=True)
         else:
             df_combined = df_legal
-    
-        # Debugging: Check if df_combined is empty
-        print(f"Combined DataFrame for {event} (rows, columns): {df_combined.shape}")
-        if df_combined.empty:
-            print(f"DataFrame for {event} is empty after combining legal and illegal data.")
-            return None
     
         # Handle invalid dates by replacing '00' with '01'
         df_combined['Date'] = df_combined['Date'].str.replace(r'00\.00\.', '01.01.', regex=True)
         df_combined['DOB'] = df_combined['DOB'].str.replace(r'00\.00\.', '01.01.', regex=True)
     
-        # Convert Date and DOB columns to datetime
+        # Convert the Date and DOB columns to datetime
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y', errors='coerce')
         df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%Y', errors='coerce')
     
-        # Remove rows where DOB is missing
-        df_combined = df_combined.dropna(subset=['DOB'])
-    
-        # Replace missing Wind values with "N/A"
-        if 'Wind' not in df_combined.columns:
-            df_combined['Wind'] = "N/A"
+        # Handle missing wind data
+        if 'Wind' in df_combined.columns:
+            df_combined['Wind'].fillna(0, inplace=True)
         else:
-            df_combined['Wind'] = df_combined['Wind'].fillna("N/A")
+            # Add 'Wind' column with 0 if it's missing
+            df_combined['Wind'] = 0
     
-        df_combined['Time'] = df_combined['Time'].astype(float)
+        # Process the time and note columns
+        df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
+        df_combined['Time'] = df_combined['Time'].str.replace(r'[a-zA-Z#*@+´]', '', regex=True)
+        
+        if event in ['800', '1500', '5000', '10000']:
+            df_combined['Time'] = df_combined['Time'].apply(self.convert_mmss_to_seconds)
+    
+        df_combined['Time'] = df_combined['Time'].astype('float')
         df_combined['Sex'] = 'Male' if self.gender == 'male' else 'Female'
         df_combined['Event'] = event
     
@@ -214,4 +181,38 @@ class AthleticsDataScraper:
         df_combined = self.add_competition_id(df_combined)
     
         return df_combined
+    this is format_data_frames: import pandas as pd
 
+def ensure_column_order(df):
+    """Ensure the DataFrame columns are in the correct order."""
+    expected_columns = [
+        'Rank', 'Time', 'Wind', 'Name', 'Country', 'DOB', 'Position_in_race', 
+        'City', 'Date', 'Legal', 'Note', 'Sex', 'Event', 'All Conditions Rank', 
+        'competition_id', 'Track/Field'
+    ]
+    
+    # Add missing columns with NaN values
+    for col in expected_columns:
+        if col not in df.columns:
+            df[col] = pd.NA
+    
+    # Reorder columns
+    df = df[expected_columns]
+    
+    return df
+
+
+def process_combined_data(combined_data):
+    for gender in ['men', 'women']:
+        for event, df in combined_data[gender].items():
+            # Ensure the 'Wind' column is present in all DataFrames
+            if 'Wind' not in df.columns:
+                df['Wind'] = pd.NA
+
+            # Add 'Track/Field' column based on the event type
+            df['Track/Field'] = df['Event'].apply(lambda x: 'Track' if any(char.isdigit() for char in x) else 'Field')
+
+            # Ensure consistent column order
+            df = ensure_column_order(df)
+
+    return combined_data
