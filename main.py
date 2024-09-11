@@ -4,31 +4,13 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-from processing.scraper import AthleticsDataScraper, ensure_column_order
+from processing.scraper import AthleticsDataScraper
 from processing.create_data_frames import run_all_events
-from processing.format_data_frames import process_combined_data
+from processing.format_data_frames import process_combined_data, ensure_column_order
 
 # Google Sheets settings
 SPREADSHEET_ID = '1MPHHM-L2jcldWxFc2a8-_5bAe9ZhAdmwwr4MKcQcut8'  # Your Google Sheets file ID
 RANGE_NAME = 'Sheet1!A1'  # Sheet and starting cell to update\
-
-def ensure_column_order(df):
-    """Ensure the DataFrame columns are in the correct order."""
-    expected_columns = [
-        'Rank', 'Time', 'Wind', 'Name', 'Country', 'DOB', 'Position_in_race', 
-        'City', 'Date', 'Legal', 'Note', 'Sex', 'Event', 'All Conditions Rank', 
-        'competition_id', 'Track/Field'
-    ]
-    
-    # Add missing columns with NaN values
-    for col in expected_columns:
-        if col not in df.columns:
-            df[col] = pd.NA
-    
-    # Reorder columns
-    df = df[expected_columns]
-    
-    return df
 
 
 def clear_google_sheet():
