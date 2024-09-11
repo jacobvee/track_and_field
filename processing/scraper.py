@@ -71,18 +71,29 @@ class AthleticsDataScraper:
     def fetch_data(self, event, is_legal):
         url = self.generate_url(event, is_legal)
         print(f"Fetching data from {url}")
-        response = requests.get(url)
-        response.raise_for_status()
-        
+
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            print(f"Error fetching data from {url}: {e}")
+            return pd.DataFrame(), False  # Return empty DataFrame and has_wind = False if there's an error
+
         soup = BeautifulSoup(response.content, 'html.parser')
         pre_tag = soup.find('pre')
+
+        # If there's no 'pre' tag found, return an empty DataFrame
+        if pre_tag is None:
+            print(f"No data found for event: {event}, URL: {url}")
+            return pd.DataFrame(), False
+
         table_text = pre_tag.get_text()
         rows = table_text.split('\n')
-    
+
         def process_row(row):
             parts = re.split(r'\s{2,}', row)
             return [part.strip() for part in parts]
-    
+
         data = []
         max_length = 0
         for row in rows:
@@ -90,23 +101,29 @@ class AthleticsDataScraper:
                 processed_row = process_row(row)
                 data.append(processed_row)
                 max_length = max(max_length, len(processed_row))
-    
+
         if max_length == 10:
             column_names = ["Test", "Rank", "Time", "Wind", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
             has_wind = True
         else:
             column_names = ["Test", "Rank", "Time", "Name", "Country", "DOB", "Position_in_race", "City", "Date"]
             has_wind = False
-    
+
+        # If there's no valid data, return an empty DataFrame
+        if not data:
+            print(f"No valid data found for event: {event}, URL: {url}")
+            return pd.DataFrame(), has_wind
+
         df = pd.DataFrame(data, columns=column_names[:max_length])
         df.drop('Test', inplace=True, axis=1, errors='ignore')
         df['Legal'] = 'Y' if is_legal else 'N'
-    
+
         # Ensure DOB and Date are in a consistent format and handle errors gracefully
         df['Date'] = pd.to_datetime(df['Date'], format='%d.%m.%Y', errors='coerce')
         df['DOB'] = pd.to_datetime(df['DOB'], format='%d.%m.%Y', errors='coerce')  # Fix the date format
-    
-        return df, has_wind  # Always return two values: DataFrame and has_wind
+
+        return df, has_wind
+
 
     
     def add_all_conditions_rank(self, df, event):
@@ -152,18 +169,29 @@ class AthleticsDataScraper:
 
     def get_combined_data(self, event):
         df_legal, has_wind = self.fetch_data(event, True)
-
+    
+        if df_legal.empty:
+            print(f"No legal data available for event: {event}")
+            return pd.DataFrame()  # Return an empty DataFrame if no data is found
+    
         if has_wind:
             df_illegal, _ = self.fetch_data(event, False)
-            df_combined = pd.concat([df_legal, df_illegal], ignore_index=True)
+            if not df_illegal.empty:
+                df_combined = pd.concat([df_legal, df_illegal], ignore_index=True)
+            else:
+                df_combined = df_legal
         else:
             df_combined = df_legal
-
+    
+        if df_combined.empty:
+            print(f"No combined data available for event: {event}")
+            return pd.DataFrame()
+    
         df_combined.dropna(inplace=True)
         df_combined['Date'] = pd.to_datetime(df_combined['Date'], format='%d.%m.%Y')
         df_combined['DOB'] = pd.to_datetime(df_combined['DOB'], format='%d.%m.%Y', errors='coerce')
         df_combined = self.fill_mode_dob(df_combined)
-
+    
         df_combined['Note'] = df_combined['Time'].str.extract(r'([a-zA-Z#*@+´]+)', expand=False)
         df_combined['Time'] = df_combined['Time'].str.replace(r'[a-zA-Z#*@+´]', '', regex=True)
         if event in ['800', '1500', '5000', '10000']:
@@ -172,5 +200,12 @@ class AthleticsDataScraper:
         df_combined['Sex'] = 'Male' if self.gender == 'male' else 'Female'
         df_combined['Event'] = event
         df_combined = self.add_all_conditions_rank(df_combined, event)
-
-        df_combined.loc
+    
+        df_combined.loc[df_combined['Legal'] == 'N', 'Rank'] = pd.NA
+        df_combined = self.add_age_at_time_of_race(df_combined)
+    
+        df_combined = self.add_competition_id(df_combined)
+    
+        return df_combined
+    
+    
