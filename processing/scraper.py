@@ -12,7 +12,7 @@ def ensure_column_order(df):
         'City', 'Date', 'Legal', 'Note', 'Sex', 'Event', 'All Conditions Rank', 
         'Age at Time of Race', 'competition_id', 'Track/Field'
     ]
-    
+    ##test
     # Add missing columns with NaN values
     for col in expected_columns:
         if col not in df.columns:
