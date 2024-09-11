@@ -3,7 +3,9 @@ import numpy as np
 import hashlib
 
 class AthleticsDataScraper:
-    # All the existing methods
+    def __init__(self, gender):
+        self.base_url = 'https://www.alltime-athletics.com/'
+        self.gender = gender
 
     def fetch_data(self, event, is_legal):
         url = self.generate_url(event, is_legal)
