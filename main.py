@@ -3,16 +3,14 @@ import pandas as pd
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-import requests
 
-from processing.scraper import AthleticsDataScraper
+from processing.scraper import AthleticsDataScraper, ensure_column_order
 from processing.create_data_frames import run_all_events
-from processing.format_data_frames import process_combined_data, ensure_column_order
+from processing.format_data_frames import process_combined_data
 
 # Google Sheets settings
 SPREADSHEET_ID = '1MPHHM-L2jcldWxFc2a8-_5bAe9ZhAdmwwr4MKcQcut8'  # Your Google Sheets file ID
-RANGE_NAME = 'Sheet1!A1'  # Sheet and starting cell to update\
-
+RANGE_NAME = 'Sheet1!A1'  # Sheet and starting cell to update
 
 def clear_google_sheet():
     """Clear all the data in the Google Sheet before re-uploading."""
@@ -102,9 +100,7 @@ def process_and_update(df, gender, event, start_row):
         df['Wind'] = 0  # If Wind column is missing entirely, set it to 0 for all rows
     
     # Ensure DOB and Date columns are in datetime format before using .dt.strftime
-    if 'DOB' in df.columns:
-        df['DOB'] = pd.to_datetime(df['DOB'], errors='coerce')  # Convert to datetime
-        df['DOB'] = df['DOB'].dt.strftime('%Y-%m-%d').fillna("N/A")
+ 
     if 'Date' in df.columns:
         df['Date'] = pd.to_datetime(df['Date'], errors='coerce')  # Convert to datetime
         df['Date'] = df['Date'].dt.strftime('%Y-%m-%d').fillna("N/A")
@@ -162,4 +158,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
