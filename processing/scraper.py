@@ -9,7 +9,7 @@ class AthleticsDataScraper:
     def __init__(self, gender):
         self.base_url = 'https://www.alltime-athletics.com/'
         self.gender = gender
-
+    ##test 
     def generate_url(self, event, is_legal):
         special_cases_male = {
             '100m': ('m_100ok.htm', 'm100mno.htm'),
