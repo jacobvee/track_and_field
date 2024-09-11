@@ -22,6 +22,10 @@ def ensure_column_order(df):
 def process_combined_data(combined_data):
     for gender in ['men', 'women']:
         for event, df in combined_data[gender].items():
+            if df is None or df.empty:
+                print(f"No data to process for {gender}'s {event} event.")
+                continue  # Skip this event if there's no data
+
             # Ensure the 'Wind' column is present in all DataFrames
             if 'Wind' not in df.columns:
                 df['Wind'] = pd.NA
@@ -29,7 +33,5 @@ def process_combined_data(combined_data):
             # Add 'Track/Field' column based on the event type
             df['Track/Field'] = df['Event'].apply(lambda x: 'Track' if any(char.isdigit() for char in x) else 'Field')
 
-            # Ensure consistent column order
-            df = ensure_column_order(df)
-
     return combined_data
+
